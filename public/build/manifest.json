@@ -4,12 +4,12 @@
     "src": "resources/js/Pages/img/about.jpg"
   },
   "resources/js/app.jsx": {
-    "file": "assets/app-CtEVKVpi.js",
+    "file": "assets/app-B1zp3bJI.js",
     "name": "app",
     "src": "resources/js/app.jsx",
     "isEntry": true,
     "css": [
-      "assets/app-C4VujTAR.css"
+      "assets/app-BJtLEVbH.css"
     ],
     "assets": [
       "assets/about-DrvL78sr.jpg",
