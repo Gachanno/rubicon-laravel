@@ -51,4 +51,4 @@ Homestead.yaml
 *.md
 !README.md
 
-/public_html
+/public_html/
