@@ -1,0 +1,43 @@
+{
+  "resources/js/Pages/img/about.jpg": {
+    "file": "assets/about-DrvL78sr.jpg",
+    "src": "resources/js/Pages/img/about.jpg"
+  },
+  "resources/js/app.jsx": {
+    "file": "assets/app-9ifDKJka.js",
+    "name": "app",
+    "src": "resources/js/app.jsx",
+    "isEntry": true,
+    "css": [
+      "assets/app-C4VujTAR.css"
+    ],
+    "assets": [
+      "assets/about-DrvL78sr.jpg",
+      "assets/InterDisplay-Regular-CHKdHLF4.woff2",
+      "assets/InterDisplay-Light-DQj7ly9y.woff2",
+      "assets/InterDisplay-Medium-CYGNL_ty.woff2",
+      "assets/InterDisplay-SemiBold--Mm3ZPsY.woff2",
+      "assets/InterDisplay-Bold-BpCEuk9N.woff2"
+    ]
+  },
+  "resources/js/fonts/InterDisplay-Bold.woff2": {
+    "file": "assets/InterDisplay-Bold-BpCEuk9N.woff2",
+    "src": "resources/js/fonts/InterDisplay-Bold.woff2"
+  },
+  "resources/js/fonts/InterDisplay-Light.woff2": {
+    "file": "assets/InterDisplay-Light-DQj7ly9y.woff2",
+    "src": "resources/js/fonts/InterDisplay-Light.woff2"
+  },
+  "resources/js/fonts/InterDisplay-Medium.woff2": {
+    "file": "assets/InterDisplay-Medium-CYGNL_ty.woff2",
+    "src": "resources/js/fonts/InterDisplay-Medium.woff2"
+  },
+  "resources/js/fonts/InterDisplay-Regular.woff2": {
+    "file": "assets/InterDisplay-Regular-CHKdHLF4.woff2",
+    "src": "resources/js/fonts/InterDisplay-Regular.woff2"
+  },
+  "resources/js/fonts/InterDisplay-SemiBold.woff2": {
+    "file": "assets/InterDisplay-SemiBold--Mm3ZPsY.woff2",
+    "src": "resources/js/fonts/InterDisplay-SemiBold.woff2"
+  }
+}

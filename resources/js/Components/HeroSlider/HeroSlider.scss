@@ -1,0 +1,216 @@
+.hero-slider {
+  position: relative;
+  height: 700px;
+  overflow: hidden;
+  user-select: none;
+  background: #1f2933;
+  touch-action: pan-y;
+}
+
+.hero-slider__viewport {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.hero-slider__track {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  will-change: transform;
+}
+
+.hero-slider__slide {
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  text-align: center;
+  position: relative;
+}
+
+.hero-slider__content {
+  max-width: 720px;
+  padding: 0 20px;
+}
+
+.hero-slider__slide--active .hero-slider__content {
+  animation: heroContentIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.18s both;
+}
+
+@keyframes heroContentIn {
+  from { opacity: 0; transform: translateY(28px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.hero-slider__title {
+  font-size: 48px;
+  font-weight: 700;
+  margin: 0 0 20px 0;
+  line-height: 1.2;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+}
+
+.hero-slider__subtitle {
+  font-size: 18px;
+  margin: 0 0 30px 0;
+  font-weight: 400;
+  line-height: 1.6;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.hero-slider__button {
+  background-color: #f57f17;
+  color: #fff;
+  padding: 14px 40px;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.15s ease;
+
+  &:hover {
+    background-color: #e26d00;
+    transform: translateY(-2px);
+  }
+}
+
+.hero-slider__arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(6px);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  z-index: 5;
+  transition: background 0.2s ease, transform 0.15s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-50%) scale(1.05);
+  }
+
+  &--left { left: 24px; }
+  &--right { right: 24px; }
+}
+
+.hero-slider__indicators {
+  position: absolute;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+  z-index: 5;
+  padding: 0 20px;
+  max-width: 90%;
+}
+
+.hero-slider__indicator {
+  position: relative;
+  width: 56px;
+  height: 5px;
+  border: none;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.35);
+  cursor: pointer;
+  padding: 0;
+  overflow: hidden;
+  transition: background 0.2s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.5);
+  }
+}
+
+.hero-slider__indicator-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 0;
+  background: #fff;
+  border-radius: 3px;
+  transform-origin: left center;
+}
+
+.hero-slider__indicator--active {
+  background: rgba(255, 255, 255, 0.25);
+
+  .hero-slider__indicator-fill {
+    animation: heroIndicatorFill 10s linear forwards;
+  }
+}
+
+.hero-slider--paused .hero-slider__indicator-fill {
+  animation-play-state: paused !important;
+}
+
+@keyframes heroIndicatorFill {
+  from { width: 0; }
+  to   { width: 100%; }
+}
+
+@media (max-width: 1024px) {
+  .hero-slider {
+    height: 560px;
+  }
+  .hero-slider__title {
+    font-size: 40px;
+  }
+}
+
+@media (max-width: 768px) {
+  .hero-slider {
+    height: 480px;
+  }
+  .hero-slider__title {
+    font-size: 34px;
+  }
+  .hero-slider__subtitle {
+    font-size: 16px;
+  }
+  .hero-slider__arrow {
+    display: none;
+  }
+  .hero-slider__indicator {
+    width: 44px;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-slider {
+    height: 440px;
+  }
+  .hero-slider__title {
+    font-size: 28px;
+  }
+  .hero-slider__button {
+    width: 100%;
+    padding: 12px 16px;
+  }
+  .hero-slider__indicator {
+    width: 36px;
+    height: 4px;
+  }
+  .hero-slider__indicators {
+    bottom: 18px;
+    gap: 8px;
+  }
+}

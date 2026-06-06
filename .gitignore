@@ -1,0 +1,54 @@
+# ─── Laravel / зависимости ───
+/vendor
+/node_modules
+/public/hot
+/public/storage
+/storage/*.key
+/storage/pail
+/auth.json
+
+# ─── Окружение и секреты ───
+.env
+.env.backup
+.env.production
+
+# ─── Логи и кэши ───
+*.log
+.phpunit.result.cache
+/.phpunit.cache
+
+# ─── Редакторы / IDE ───
+/.fleet
+/.idea
+/.nova
+/.vscode
+/.zed
+.phpactor.json
+
+# ─── ОС ───
+.DS_Store
+Thumbs.db
+
+# ─── Локальное окружение разработки (не нужно на хостинге) ───
+# конфиг OSPanel
+/.osp
+# конфиг MCP-инструментов
+/.mcp.json
+Homestead.json
+Homestead.yaml
+
+# ─── Временные артефакты разработки ───
+# скриншоты / вывод браузерного агента
+/.playwright-mcp
+# промежуточный файл генерации фавиконки
+/favicons.json
+# временный HTML для рендера фавиконки
+/public/_favsrc.html
+# архивы сборки / выгрузки на хостинг
+*.zip
+
+# ─── Документация и диаграммы (нужны только при разработке) ───
+*.md
+!README.md
+
+/public_html

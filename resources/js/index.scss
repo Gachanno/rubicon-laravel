@@ -1,0 +1,51 @@
+@use './variables' as *;
+@use './shared';
+
+// Font imports
+@font-face {
+    font-family: 'Inter';
+    src: url('./fonts/InterDisplay-Regular.woff2') format('woff2');
+    font-weight: 400;
+}
+
+@font-face {
+    font-family: 'Inter';
+    src: url('./fonts/InterDisplay-Light.woff2') format('woff2');
+    font-weight: 300;
+}
+
+@font-face {
+    font-family: 'Inter';
+    src: url('./fonts/InterDisplay-Medium.woff2') format('woff2');
+    font-weight: 500;
+}
+
+@font-face {
+    font-family: 'Inter';
+    src: url('./fonts/InterDisplay-SemiBold.woff2') format('woff2');
+    font-weight: 600;
+}
+
+@font-face {
+    font-family: 'Inter';
+    src: url('./fonts/InterDisplay-Bold.woff2') format('woff2');
+    font-weight: 700;
+}
+
+$font-family: "Inter", sans-serif;
+$text-color: #000;
+
+html {
+    scroll-behavior: smooth;
+}
+
+body{
+    margin: 0;
+}
+
+body{
+    font-family: $font-family;
+    font-weight: 400;
+    font-size: 1rem;
+    color: $text-color;
+}

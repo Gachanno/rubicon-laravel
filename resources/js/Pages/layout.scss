@@ -1,0 +1,69 @@
+// Layout Styles
+.layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+
+  &__main {
+    flex: 1;
+  }
+}
+
+// Order status-change toasts
+.notify-toasts {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 4000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: min(360px, calc(100vw - 32px));
+}
+
+.notify-toast {
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  border: none;
+  border-left: 4px solid #27ae60;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+  animation: notifyIn 0.25s ease;
+  transition: transform 0.15s, box-shadow 0.15s;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 34px rgba(0, 0, 0, 0.22);
+  }
+
+  &__text {
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: #2d3436;
+    line-height: 1.4;
+  }
+
+  &__hint {
+    font-size: 0.72rem;
+    color: #aaa;
+  }
+}
+
+@keyframes notifyIn {
+  from { transform: translateX(40px); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+@media (max-width: 480px) {
+  .notify-toasts {
+    right: 12px;
+    left: 12px;
+    bottom: 12px;
+    max-width: none;
+  }
+}

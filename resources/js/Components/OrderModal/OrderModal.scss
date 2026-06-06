@@ -1,0 +1,134 @@
+.order-modal__overlay {
+  position: fixed;
+  inset: 0;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2200;
+}
+
+.order-modal__window {
+  width: min(400px, 100%);
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.16);
+  overflow: hidden;
+  animation: omIn 0.18s ease;
+}
+
+@keyframes omIn {
+  from { transform: scale(0.95) translateY(8px); opacity: 0; }
+  to   { transform: scale(1)    translateY(0);   opacity: 1; }
+}
+
+.order-modal__header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.order-modal__header-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.order-modal__subtitle {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #2e7d32;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.order-modal__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #2d3436;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.order-modal__close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #bbb;
+  padding: 2px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  margin-top: 1px;
+  transition: color 0.15s;
+
+  &:hover { color: #636e72; }
+}
+
+.order-modal__body {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.order-modal__label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #495057;
+}
+
+.order-modal__stock {
+  font-size: 0.8rem;
+  color: #aaa;
+}
+
+.order-modal__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  border-top: 1px solid #f0f0f0;
+  background: #fafafa;
+}
+
+.order-modal__btn {
+  padding: 9px 22px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &--cancel {
+    background: #e74c3c;
+    color: #fff;
+    &:hover { background: #c0392b; }
+  }
+
+  &--confirm {
+    background: #2e7d32;
+    color: #fff;
+    &:hover { background: #1b5e20; }
+  }
+}
+
+@media (max-width: 480px) {
+  .order-modal__footer {
+    flex-direction: column-reverse;
+
+    .order-modal__btn {
+      width: 100%;
+      text-align: center;
+    }
+  }
+}

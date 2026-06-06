@@ -1,0 +1,286 @@
+@use 'sass:color';
+
+// Auth-specific variables
+$primary-color: #2e7d32;
+$secondary-color: #ff9800;
+$text-color: #333;
+$light-text: #aaa;
+$error-color: #d32f2f;
+$border-color: #aaa;
+$white: #fff;
+$light-bg: #f5f5f5;
+
+// Auth Modal Styles
+.auth-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: safe center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+    overflow-y: auto;
+
+    @media (max-width: 480px) {
+        padding: 10px;
+    }
+
+  &__content {
+    display: flex;
+    flex-direction: column;
+    gap: 35px;
+    background: $white;
+    border-radius: 12px;
+    padding: 40px;
+    max-width: 380px;
+    width: 100%;
+    box-shadow: 0 3px 22px 16px rgba(0, 0, 0, 0.25);
+
+    @media (max-width: 480px) {
+        padding: 25px;
+        max-width: 100%;
+    }
+  }
+
+  &__logo{
+    svg{
+        width: min(250px, 100%);
+
+        @media (max-width: 480px) {
+          width: min(210px, 100%);
+        }
+    }
+  }
+
+  &__header {
+    text-align: center;
+  }
+
+  &__tabs {
+    display: flex;
+    justify-content: space-between;
+    gap: 0;
+    border-bottom: 1px solid $border-color;
+  }
+
+  &__tab {
+    padding: 1px 15px;
+    background: none;
+    border: none;
+    font-size: 16px;
+    font-weight: 400;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -1px;
+
+    &:hover:not(.auth-modal__tab--active) {
+      color: $text-color;
+    }
+
+    &--active {
+      color: $primary-color;
+      border-bottom-color: $primary-color;
+    }
+
+    @media (max-width: 480px) {
+      font-size: 14px;
+      padding: 1px 8px;
+    }
+  }
+
+  &__footer {
+    text-align: center;
+    padding-top: 10px;
+  }
+
+  &__footer-text {
+    color: $light-text;
+  }
+
+  &__footer-link {
+    background: none;
+    border: none;
+    color: $primary-color;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: color 0.3s ease;
+    padding: 0;
+    margin-left: 4px;
+
+    &:hover {
+      color: $secondary-color;
+    }
+  }
+
+  &__back {
+    text-align: center;
+    padding-top: 4px;
+  }
+
+  &__back-link {
+    color: $light-text;
+    font-size: 14px;
+    text-decoration: none;
+    transition: color 0.2s;
+
+    &:hover {
+      color: $primary-color;
+    }
+  }
+}
+
+// Auth Form Styles
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+
+  &__group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  &__input {
+    padding: 13px 15px;
+    border: 1px solid $border-color;
+    border-radius: 5px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+
+    &::placeholder {
+      color: #aaa;
+    }
+
+    &:focus {
+      outline: none;
+      border-color: $primary-color;
+      box-shadow: 0 0 0 2px rgba(61, 125, 45, 0.1);
+    }
+
+    &--error {
+      border-color: $error-color;
+
+      &:focus {
+        box-shadow: 0 0 0 2px rgba(211, 47, 47, 0.1);
+      }
+    }
+  }
+
+  &__password-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  &__password-wrapper .auth-form__input {
+    padding-right: 44px;
+    width: 100%;
+  }
+
+  &__password-toggle {
+    position: absolute;
+    right: 12px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: $light-text;
+    transition: color 0.3s ease;
+
+    svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    &:hover {
+      color: $primary-color;
+    }
+
+    &:focus {
+      outline: none;
+    }
+  }
+
+  &__error {
+    font-size: 12px;
+    color: $error-color;
+    margin-top: 2px;
+  }
+
+  &__hint {
+    font-size: 12px;
+    color: $light-text;
+    margin-top: 2px;
+  }
+
+  &__optional {
+    font-size: 11px;
+    font-weight: 400;
+    color: $light-text;
+  }
+
+  &__rules {
+    list-style: none;
+    padding: 0;
+    margin: 4px 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  &__rule {
+    font-size: 12px;
+    color: $light-text;
+
+    &--ok   { color: $primary-color; }
+    &--fail { color: $error-color; }
+  }
+
+  &__success {
+    padding: 12px 14px;
+    background-color: #e8f5e9;
+    color: #2e7d32;
+    border: 1px solid #a5d6a7;
+    border-radius: 6px;
+    font-size: 14px;
+    margin-bottom: 16px;
+  }
+
+  &__button {
+    padding: 14px 0;
+    background-color: $primary-color;
+    color: $white;
+    border: none;
+    border-radius: 6px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 8px;
+
+    &:hover {
+      background-color: color.adjust($primary-color, $lightness: -10%);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(61, 125, 45, 0.3);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+
+    &:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+      transform: none;
+    }
+  }
+}

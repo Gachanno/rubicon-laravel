@@ -1,0 +1,39 @@
+.cart-toast-global {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  background: #2e7d32;
+  color: #fff;
+  padding: 14px 20px;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+  z-index: 4000;
+  max-width: min(420px, calc(100vw - 32px));
+  text-align: center;
+  line-height: 1.45;
+  animation: cart-toast-global-in 320ms cubic-bezier(.2, .9, .2, 1);
+  will-change: transform, opacity;
+}
+
+@keyframes cart-toast-global-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 600px) {
+  .cart-toast-global {
+    right: 10px;
+    left: 10px;
+    bottom: 10px;
+    max-width: none;
+    padding: 12px 14px;
+  }
+}

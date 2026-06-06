@@ -1,0 +1,467 @@
+// Shared product card styles
+.product-card {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+
+  &:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  }
+}
+
+.product-card__link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.product-card__image-wrapper {
+  position: relative;
+  width: 100%;
+  height: 270px;
+  background: #f5f6fa;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.product-card__image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  transition: transform 0.18s ease;
+
+  .product-card:hover & {
+    transform: scale(1.02);
+  }
+}
+
+.product-card__badge {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: rgba(231, 76, 60, 0.9);
+  color: white;
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.product-card__name {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #2d3436;
+  padding: 0.75rem 1rem 0.25rem;
+  margin: 0;
+  line-height: 1.2;
+  min-height: 2.4em;
+}
+
+.product-card__description {
+  font-size: 0.85rem;
+  color: #636e72;
+  padding: 0 1rem 0.75rem;
+  margin: 0;
+  line-height: 1.3;
+  flex-grow: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.product-card__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+  padding: 1rem;
+  border-top: 1px solid #f0f0f0;
+}
+
+.product-card__price {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #27ae60;
+  text-align: center;
+}
+
+.product-card__price-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  line-height: 1.2;
+}
+
+.product-card__price--old {
+  text-decoration: line-through;
+  color: #aaa;
+  font-size: 0.85rem;
+}
+
+.product-card__price--new {
+  color: #e74c3c;
+  font-weight: 700;
+  font-size: 1.3rem;
+}
+
+.product-card__discount-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: #e74c3c;
+  color: #fff;
+  padding: 3px 9px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.product-card__rating {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 1rem 4px;
+}
+
+.product-card__rating-count {
+  color: #636e72;
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+
+.product-card__button {
+  padding: 0.75rem 1rem;
+  background-color: #27ae60;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  width: 100%;
+
+  &:hover:not(:disabled) {
+    background-color: #27ae60;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(39, 174, 96, 0.18);
+  }
+
+  &:disabled {
+    background-color: #bdc3c7;
+    cursor: not-allowed;
+  }
+}
+
+.product-card__staff-notice {
+  padding: 0.75rem 0rem;
+  background-color: #f5f5f5;
+  color: #888;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  text-align: center;
+  width: 100%;
+}
+
+// Shared products grid
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+// Shared booking quantity controls
+.booking__quantity {
+  display: flex;
+  align-items: center;
+  border: 1px solid #dfe6e9;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.qty-btn {
+  background: #f8f9fa;
+  border: none;
+  width: 40px;
+  height: 40px;
+  font-size: 1.2rem;
+  color: #2d3436;
+  cursor: pointer;
+  transition: background 0.2s ease;
+
+  &:hover {
+    background: #ecf0f1;
+  }
+
+  &:active {
+    background: #dfe6e9;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+}
+
+.qty-input {
+  border: none;
+  width: 60px;
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 0.5rem;
+
+  &::-webkit-outer-spin-button,
+  &::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  &[type=number] {
+    appearance: textfield;
+    -moz-appearance: textfield;
+  }
+
+  &:disabled {
+    background: #f8f9fa;
+    color: #bdc3c7;
+    cursor: not-allowed;
+  }
+}
+
+// Shared button base
+.btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &--primary {
+    background: #2e7d32;
+    color: white;
+  }
+
+  &--secondary {
+    background: #636e72;
+    color: white;
+  }
+
+  &--danger {
+    background: #e74c3c;
+    color: white;
+  }
+
+  &--confirm {
+    background: #2e7d32;
+    color: #fff;
+  }
+
+  &--cancel {
+    background: #e74c3c;
+    color: #fff;
+  }
+
+  &--two{
+    background-color: #ff9800;
+    color: #fff;
+  }
+
+  &--remove {
+    background: #e74c3c;
+    color: #fff;
+  }
+
+  &--remove-all {
+    background: #e74c3c;
+    color: #fff;
+    font-weight: 600;
+  }
+
+  &--confirm-all {
+    background: #2e7d32;
+    color: #fff;
+    font-weight: 600;
+  }
+}
+
+@media (max-width: 768px) {
+  .products-grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1rem;
+  }
+
+  .product-card__image-wrapper {
+    height: 200px;
+  }
+
+  .qty-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .qty-input {
+    width: 54px;
+  }
+
+  .btn {
+    padding: 0.65rem 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .products-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .product-card__image-wrapper {
+    height: 180px;
+  }
+}
+
+// Shared loading state
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 80vh;
+  font-size: 1.2rem;
+}
+
+// Shared pagination
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  padding: 2rem 1rem;
+  flex-wrap: wrap;
+}
+
+.pagination__btn {
+  min-width: 38px;
+  height: 38px;
+  padding: 0 10px;
+  border: 1.5px solid #dfe6e9;
+  border-radius: 8px;
+  background: #fff;
+  color: #2d3436;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+
+  &:hover:not(:disabled) {
+    border-color: #27ae60;
+    color: #27ae60;
+  }
+
+  &--active {
+    background: #27ae60;
+    border-color: #27ae60;
+    color: #fff;
+    font-weight: 700;
+    cursor: default;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+.pagination__ellipsis {
+  min-width: 28px;
+  text-align: center;
+  color: #b2bec3;
+  font-size: 1rem;
+  user-select: none;
+}
+
+@media (max-width: 480px) {
+  .pagination__btn {
+    min-width: 34px;
+    height: 34px;
+    font-size: 0.82rem;
+  }
+}
+
+/* ─── Custom checkboxes (global) ─── */
+.filter-check-label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 0.9rem;
+  color: #2d3436;
+  cursor: pointer;
+  user-select: none;
+  line-height: 1.3;
+}
+
+.filter-check-input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.filter-check-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 17px;
+  height: 17px;
+  border: 1.8px solid #ced4da;
+  border-radius: 4px;
+  background: #fff;
+  transition: border-color 0.15s, background 0.15s;
+
+  &::after {
+    content: '';
+    display: block;
+    width: 9px;
+    height: 5px;
+    border-left: 2px solid transparent;
+    border-bottom: 2px solid transparent;
+    transform: rotate(-45deg) translateY(-1px);
+    transition: border-color 0.12s;
+  }
+}
+
+.filter-check-input:checked + .filter-check-box {
+  background: #27ae60;
+  border-color: #27ae60;
+
+  &::after {
+    border-left-color: #fff;
+    border-bottom-color: #fff;
+  }
+}
+
+.filter-check-label:hover .filter-check-box {
+  border-color: #27ae60;
+}
