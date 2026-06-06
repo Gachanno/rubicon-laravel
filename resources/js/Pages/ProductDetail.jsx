@@ -299,7 +299,12 @@ const ProductDetail = ({ product: initialProduct }) => {
       </div>
 
       <div className="product-detail__reviews">
-        <ReviewSection productId={product.id} currentUser={auth?.user} isAdmin={auth?.user?.role === 'Администратор' || auth?.user?.role === 'Менеджер'} />
+        <ReviewSection
+          productId={product.id}
+          currentUser={auth?.user}
+          isAdmin={auth?.user?.role === 'Администратор'}
+          isStaff={auth?.user?.role === 'Администратор' || auth?.user?.role === 'Менеджер'}
+        />
       </div>
     </div>
   )

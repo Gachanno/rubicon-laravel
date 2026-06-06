@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { Rating } from 'react-simple-star-rating'
 import { X } from 'lucide-react'
 import { requestsService } from '../../api/api'
+import ModalConfirm from '../ModalConfirm'
 import './ReviewSection.scss'
 
 const SORT_OPTIONS = [
@@ -11,7 +12,7 @@ const SORT_OPTIONS = [
   { value: 'low', label: 'Низкий рейтинг' },
 ]
 
-const ReviewSection = ({ productId, currentUser, isAdmin }) => {
+const ReviewSection = ({ productId, currentUser, isAdmin, isStaff }) => {
   const [reviews, setReviews] = useState([])
   const [canReview, setCanReview] = useState(false)
   const [hasReview, setHasReview] = useState(false)
@@ -23,7 +24,8 @@ const ReviewSection = ({ productId, currentUser, isAdmin }) => {
   const [error, setError] = useState('')
   const [lightbox, setLightbox] = useState(null)
   const [sortOrder, setSortOrder] = useState('newest')
-  const [deleteConfirm, setDeleteConfirm] = useState({ open: false, id: null, isOwn: false })
+  const [showPending, setShowPending] = useState(false)
+  const [confirmAction, setConfirmAction] = useState({ open: false, type: null, reviewId: null, userId: null, userName: '' })
   const fileInputRef = useRef(null)
 
   const loadData = async () => {
@@ -127,16 +129,33 @@ const ReviewSection = ({ productId, currentUser, isAdmin }) => {
     setSubmitting(false)
   }
 
-  const avgRating = reviews.length > 0
-    ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+  // ── Only APPROVED reviews count toward the rating shown to everyone ──
+  const approvedReviews = reviews.filter(r => r.status === 'approved')
+  const pendingReviews  = reviews.filter(r => r.status === 'pending')
+
+  // Auto-return to the published view once nothing is left on moderation
+  useEffect(() => {
+    if (showPending && pendingReviews.length === 0) setShowPending(false)
+  }, [pendingReviews.length, showPending])
+
+  const avgRating = approvedReviews.length > 0
+    ? approvedReviews.reduce((sum, r) => sum + r.rating, 0) / approvedReviews.length
     : 0
 
-  const sortedReviews = [...reviews].sort((a, b) => {
+  const baseList = showPending ? pendingReviews : approvedReviews
+  const sortedReviews = [...baseList].sort((a, b) => {
     if (sortOrder === 'oldest') return new Date(a.createdAt) - new Date(b.createdAt)
     if (sortOrder === 'high') return b.rating - a.rating
     if (sortOrder === 'low') return a.rating - b.rating
     return new Date(b.createdAt) - new Date(a.createdAt)
   })
+
+  const confirmMeta = {
+    approve: { title: 'Одобрить отзыв?', body: 'Отзыв будет опубликован и начнёт учитываться в рейтинге товара.' },
+    own:     { title: 'Удалить мой отзыв?', body: 'Ваш отзыв будет удалён безвозвратно.' },
+    review:  { title: 'Удалить отзыв?', body: 'Отзыв будет удалён безвозвратно.' },
+    user:    { title: 'Удалить пользователя?', body: '' },
+  }
 
   if (loading) return <div className="review-section__loading">Загрузка отзывов...</div>
 
@@ -145,23 +164,23 @@ const ReviewSection = ({ productId, currentUser, isAdmin }) => {
       {/* Header */}
       <div className="review-section__header">
         <h2 className="review-section__title">Отзывы</h2>
-        {reviews.length > 0 && (
+        {approvedReviews.length > 0 && (
           <div className="review-section__avg">
             <span className="review-section__avg-score">{avgRating.toFixed(1)}</span>
             <div className="review-section__avg-stars">
               <Rating readonly initialValue={avgRating} size={26} allowFraction SVGstyle={{ display: 'inline' }} />
             </div>
-            <span className="review-section__count">{reviews.length} {declReviews(reviews.length)}</span>
+            <span className="review-section__count">{approvedReviews.length} {declReviews(approvedReviews.length)}</span>
           </div>
         )}
       </div>
 
-      {/* Rating breakdown */}
-      {reviews.length > 0 && (
+      {/* Rating breakdown — approved only */}
+      {approvedReviews.length > 0 && (
         <div className="review-section__breakdown">
           {[5, 4, 3, 2, 1].map(star => {
-            const count = reviews.filter(r => r.rating === star).length
-            const pct = reviews.length > 0 ? Math.round((count / reviews.length) * 100) : 0
+            const count = approvedReviews.filter(r => r.rating === star).length
+            const pct = approvedReviews.length > 0 ? Math.round((count / approvedReviews.length) * 100) : 0
             return (
               <div key={star} className="breakdown-row">
                 <span className="breakdown-row__star">{star} ★</span>
@@ -183,7 +202,7 @@ const ReviewSection = ({ productId, currentUser, isAdmin }) => {
               <button className="review-section__btn" onClick={openEditForm}>Изменить мой отзыв</button>
               <button
                 className="review-section__btn review-section__btn--cancel"
-                onClick={() => setDeleteConfirm({ open: true, id: userReview?.id, isOwn: true })}
+                onClick={() => setConfirmAction({ open: true, type: 'own', reviewId: userReview?.id })}
               >
                 Удалить мой отзыв
               </button>
@@ -292,10 +311,22 @@ const ReviewSection = ({ productId, currentUser, isAdmin }) => {
       )}
 
       {/* Sort + list */}
-      {reviews.length === 0 ? (
+      {(approvedReviews.length === 0 && pendingReviews.length === 0) ? (
         <div className="review-section__empty">Пока нет отзывов. Будьте первым!</div>
       ) : (
         <>
+          {/* Moderation banner — staff only */}
+          {isStaff && pendingReviews.length > 0 && (
+            <button
+              className={`review-section__moderation-banner ${showPending ? 'active' : ''}`}
+              onClick={() => setShowPending(v => !v)}
+            >
+              {showPending
+                ? '← Вернуться к опубликованным отзывам'
+                : `На данный товар есть ${pendingReviews.length} ${declReviews(pendingReviews.length)} в модерации`}
+            </button>
+          )}
+
           <div className="review-section__sort">
             {SORT_OPTIONS.map(opt => (
               <button
@@ -308,82 +339,106 @@ const ReviewSection = ({ productId, currentUser, isAdmin }) => {
             ))}
           </div>
 
-          <div className="review-section__list">
-            {sortedReviews.map(review => (
-              <div key={review.id} className="review-card">
-                <div className="review-card__header">
-                  <span className="review-card__author">{review.userName}</span>
-                  <Rating readonly initialValue={review.rating} size={18} SVGstyle={{ display: 'inline' }} />
-                  <span className="review-card__rating-num">{review.rating}.0</span>
-                  <span className="review-card__date">
-                    {new Date(review.createdAt).toLocaleDateString('ru-RU')}
-                  </span>
-                  {isAdmin && (
-                    <button
-                      className="review-card__delete-btn"
-                      title="Удалить отзыв"
-                      onClick={() => setDeleteConfirm({ open: true, id: review.id, isOwn: false })}
-                    >
-                      Удалить
-                    </button>
+          {sortedReviews.length === 0 ? (
+            <div className="review-section__empty">
+              {showPending ? 'Нет отзывов на модерации.' : 'Пока нет опубликованных отзывов.'}
+            </div>
+          ) : (
+            <div className="review-section__list">
+              {sortedReviews.map(review => (
+                <div key={review.id} className={`review-card ${review.status === 'pending' ? 'review-card--pending' : ''}`}>
+                  <div className="review-card__header">
+                    <span className="review-card__author">{review.userName}</span>
+                    <Rating readonly initialValue={review.rating} size={18} SVGstyle={{ display: 'inline' }} />
+                    <span className="review-card__rating-num">{review.rating}.0</span>
+                    <span className="review-card__date">
+                      {new Date(review.createdAt).toLocaleDateString('ru-RU')}
+                    </span>
+                    {review.status === 'pending' && (
+                      <span className="review-card__pending-tag">На модерации</span>
+                    )}
+                    {isAdmin && (
+                      <div className="review-card__admin-actions">
+                        {review.status === 'pending' && (
+                          <button
+                            className="review-card__approve-btn"
+                            title="Одобрить отзыв"
+                            onClick={() => setConfirmAction({ open: true, type: 'approve', reviewId: review.id })}
+                          >
+                            Одобрить
+                          </button>
+                        )}
+                        <button
+                          className="review-card__delete-btn"
+                          title="Удалить отзыв"
+                          onClick={() => setConfirmAction({ open: true, type: 'review', reviewId: review.id })}
+                        >
+                          Удалить
+                        </button>
+                        <button
+                          className="review-card__deluser-btn"
+                          title="Удалить пользователя со всеми его отзывами"
+                          onClick={() => setConfirmAction({ open: true, type: 'user', userId: review.userId, userName: review.userName })}
+                        >
+                          Удалить пользователя
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  {review.body && <p className="review-card__body">{review.body}</p>}
+                  {review.images && review.images.length > 0 && (
+                    <div className="review-card__images">
+                      {review.images.map((url, idx) => (
+                        <img
+                          key={idx}
+                          src={url}
+                          alt=""
+                          className="review-card__image"
+                          onClick={() => setLightbox(url)}
+                        />
+                      ))}
+                    </div>
                   )}
                 </div>
-                {review.body && <p className="review-card__body">{review.body}</p>}
-                {review.images && review.images.length > 0 && (
-                  <div className="review-card__images">
-                    {review.images.map((url, idx) => (
-                      <img
-                        key={idx}
-                        src={url}
-                        alt=""
-                        className="review-card__image"
-                        onClick={() => setLightbox(url)}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </>
       )}
 
-      {deleteConfirm.open && (
-        <div className="review-lightbox" style={{ background: 'rgba(0,0,0,0.45)' }} onClick={() => setDeleteConfirm({ open: false, id: null })}>
-          <div
-            style={{ background: '#fff', borderRadius: 10, padding: '24px 28px', minWidth: 280, boxShadow: '0 8px 30px rgba(0,0,0,0.18)', display: 'flex', flexDirection: 'column', gap: 16 }}
-            onClick={e => e.stopPropagation()}
-          >
-            <p style={{ margin: 0, fontSize: '1rem', color: '#2d3436', textAlign: 'center' }}>Удалить этот отзыв?</p>
-            <div style={{ display: 'flex', gap: 10, justifyContent: 'space-between' }}>
-              <button
-                className="review-section__btn review-section__btn--cancel"
-                onClick={() => setDeleteConfirm({ open: false, id: null })}
-              >Отмена</button>
-              <button
-                className="review-section__btn"
-                style={{ background: '#e74c3c' }}
-                onClick={async () => {
-                  const { id, isOwn } = deleteConfirm
-                  setDeleteConfirm({ open: false, id: null, isOwn: false })
-                  let res
-                  if (isOwn) {
-                    res = await requestsService.deleteOwnReview(productId)
-                    if (res?.success) {
-                      setReviews(prev => prev.filter(r => r.id !== id))
-                      setHasReview(false)
-                      setUserReview(null)
-                    }
-                  } else {
-                    res = await requestsService.deleteReview(id)
-                    if (res?.success) setReviews(prev => prev.filter(r => r.id !== id))
-                  }
-                }}
-              >Удалить</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ModalConfirm
+        open={confirmAction.open}
+        variant={confirmAction.type === 'approve' ? 'success' : 'danger'}
+        title={confirmMeta[confirmAction.type]?.title}
+        body={
+          confirmAction.type === 'user'
+            ? `Аккаунт ${confirmAction.userName || 'пользователя'} и все его отзывы будут удалены безвозвратно.`
+            : confirmMeta[confirmAction.type]?.body
+        }
+        confirmLabel={confirmAction.type === 'approve' ? 'Одобрить' : 'Удалить'}
+        onCancel={() => setConfirmAction({ open: false, type: null, reviewId: null, userId: null, userName: '' })}
+        onConfirm={async () => {
+          const { type, reviewId, userId } = confirmAction
+          setConfirmAction({ open: false, type: null, reviewId: null, userId: null, userName: '' })
+          if (type === 'approve') {
+            const res = await requestsService.approveReview(reviewId)
+            if (res?.success) setReviews(prev => prev.map(r => (r.id === reviewId ? { ...r, status: 'approved' } : r)))
+          } else if (type === 'own') {
+            const res = await requestsService.deleteOwnReview(productId)
+            if (res?.success) {
+              setReviews(prev => prev.filter(r => r.id !== reviewId))
+              setHasReview(false)
+              setUserReview(null)
+            }
+          } else if (type === 'review') {
+            const res = await requestsService.deleteReview(reviewId)
+            if (res?.success) setReviews(prev => prev.filter(r => r.id !== reviewId))
+          } else if (type === 'user') {
+            const res = await requestsService.deleteReviewUser(userId)
+            if (res?.success) setReviews(prev => prev.filter(r => r.userId !== userId))
+          }
+        }}
+      />
 
       {lightbox && (
         <div className="review-lightbox" onClick={() => setLightbox(null)}>

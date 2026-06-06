@@ -5,18 +5,28 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use App\Models\Category;
 use App\Models\Slide;
+use App\Http\Controllers\Api\ProductController;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class PageController extends Controller
 {
     public function main()
     {
+        // Только одобренные отзывы учитываются в рейтинге и счётчике на карточках
+        $approved = fn($q) => $q->where('status', 'approved');
         $products = Product::with('categories', 'characteristics')
-            ->withCount('reviews')
-            ->withAvg('reviews', 'rating')
+            ->withCount(['reviews as reviews_count' => $approved])
+            ->withAvg(['reviews as reviews_avg_rating' => $approved], 'rating')
+            ->addSelect(['purchases_count' => DB::table('order_items as oi')
+                ->join('orders as o', 'o.id', '=', 'oi.order_id')
+                ->whereColumn('oi.product_id', 'products.id')
+                ->whereNotIn('o.status', ['не оформлено', 'отменено'])
+                ->selectRaw('COALESCE(SUM(oi.quantity), 0)')])
             ->where('available_quantity', '>', 0)
-            ->orderBy('reviews_count', 'desc')
+            // Популярность: только одобренные отзывы (см. ProductController::popularityExpr)
+            ->orderByRaw(ProductController::popularityExpr() . ' DESC')
             ->take(8)
             ->get()
             ->map(fn($p) => $this->formatProduct($p));
@@ -68,9 +78,10 @@ class PageController extends Controller
 
     public function productDetail(int $id)
     {
+        $approved = fn($q) => $q->where('status', 'approved');
         $product = Product::with('categories', 'characteristics')
-            ->withAvg('reviews', 'rating')
-            ->withCount('reviews')
+            ->withAvg(['reviews as reviews_avg_rating' => $approved], 'rating')
+            ->withCount(['reviews as reviews_count' => $approved])
             ->find($id);
 
         if (!$product) {
@@ -132,6 +143,7 @@ class PageController extends Controller
                 ? round((float) $p->reviews_avg_rating, 1)
                 : null,
             'reviews_count' => (int) ($p->reviews_count ?? 0),
+            'purchases_count' => (int) ($p->purchases_count ?? 0),
             'category' => $p->categories->pluck('id')->toArray(),
             'characteristics' => $p->characteristics->map(fn($ch) => [
                 'name' => $ch->name,

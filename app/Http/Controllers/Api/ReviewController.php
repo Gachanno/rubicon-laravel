@@ -10,12 +10,21 @@ use Illuminate\Http\Request;
 
 class ReviewController extends Controller
 {
-    // Public: only approved reviews
-    public function index(int $productId)
+    // Public: only approved reviews.
+    // Staff (Администратор / Менеджер) additionally receive reviews on moderation,
+    // each carries a `status` field so the client can keep them out of the rating.
+    public function index(Request $request, int $productId)
     {
-        $reviews = Review::with('user')
-            ->where('product_id', $productId)
-            ->where('status', 'approved')
+        $user = $request->user();
+        $isStaff = $user && in_array($user->role, ['Администратор', 'Менеджер'], true);
+
+        $query = Review::with('user')->where('product_id', $productId);
+
+        if (!$isStaff) {
+            $query->where('status', 'approved');
+        }
+
+        $reviews = $query
             ->orderBy('created_at', 'desc')
             ->get()
             ->map(fn($r) => $this->formatReview($r));

@@ -6,9 +6,25 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ProductController extends Controller
 {
+    /**
+     * SQL-выражение «популярности» для ORDER BY.
+     * Самодостаточно: считает только одобренные отзывы (status='approved')
+     * и покупки в реальных заказах (без корзин «не оформлено» и отменённых).
+     * Формула: (кол-во одобр. отзывов × средний рейтинг) + (кол-во покупок × 2).
+     */
+    public static function popularityExpr(): string
+    {
+        return "((SELECT COUNT(*) FROM reviews r WHERE r.product_id = products.id AND r.status = 'approved')"
+             . " * (SELECT COALESCE(AVG(r2.rating), 0) FROM reviews r2 WHERE r2.product_id = products.id AND r2.status = 'approved'))"
+             . " + ((SELECT COALESCE(SUM(oi.quantity), 0) FROM order_items oi"
+             . " JOIN orders o ON o.id = oi.order_id"
+             . " WHERE oi.product_id = products.id AND o.status NOT IN ('не оформлено', 'отменено')) * 2)";
+    }
+
     private function formatProduct($p): array
     {
         $discountPercent = (int) ($p->discount_percent ?? 0);
@@ -31,6 +47,7 @@ class ProductController extends Controller
                 ? round((float) $p->reviews_avg_rating, 1)
                 : null,
             'reviews_count'      => (int) ($p->reviews_count ?? 0),
+            'purchases_count'    => (int) ($p->purchases_count ?? 0),
             'category'           => $p->categories->pluck('id')->toArray(),
             'categories'         => $p->categories->map(fn($c) => ['id' => $c->id, 'name' => $c->name])->toArray(),
             'characteristics'    => $p->characteristics->map(fn($ch) => [
@@ -145,12 +162,22 @@ class ProductController extends Controller
         $query->withAvg(['reviews as reviews_avg_rating' => $approved], 'rating')
               ->withCount(['reviews as reviews_count' => $approved]);
 
+        // Кол-во покупок = суммарное число купленных единиц в реальных заказах
+        // (исключая корзины «не оформлено» и отменённые заказы).
+        $query->addSelect(['purchases_count' => DB::table('order_items as oi')
+            ->join('orders as o', 'o.id', '=', 'oi.order_id')
+            ->whereColumn('oi.product_id', 'products.id')
+            ->whereNotIn('o.status', ['не оформлено', 'отменено'])
+            ->selectRaw('COALESCE(SUM(oi.quantity), 0)')]);
+
         if ($sortBy === 'category') {
             $query->orderByRaw("MIN(categories.name) " . $dir);
         } elseif ($sortBy === 'rating') {
-            $query->orderByRaw("reviews_avg_rating " . $dir);
+            // Только одобренные отзывы — явный подзапрос, без опоры на псевдоним
+            $query->orderByRaw("(SELECT COALESCE(AVG(r.rating), 0) FROM reviews r WHERE r.product_id = products.id AND r.status = 'approved') " . $dir);
         } elseif ($sortBy === 'popularity') {
-            $query->orderByRaw("reviews_count " . $dir);
+            // Только одобренные отзывы — явные подзапросы, без опоры на псевдонимы
+            $query->orderByRaw(self::popularityExpr() . ' ' . $dir);
         } elseif (\in_array($sortBy, ['id', 'name', 'price', 'available_quantity', 'discount_percent', 'created_at'])) {
             $query->orderBy($sortBy, $dir);
         }
