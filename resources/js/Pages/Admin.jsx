@@ -694,7 +694,7 @@ const AdminPanel = () => {
     if (!addStaffForm.lastName.trim()) e.lastName = 'Введите фамилию'
     else if (addStaffForm.lastName.trim().length < 2) e.lastName = 'Минимум 2 символа'
     if (!addStaffForm.emailOrLogin.trim()) e.emailOrLogin = 'Введите почту/логин'
-    if (!addStaffForm.phone.trim() || addStaffForm.phone.replace(/\D/g, '').length < 11) e.phone = 'Введите корректный номер'
+    if (addStaffForm.phone.trim() && addStaffForm.phone.replace(/\D/g, '').length < 11) e.phone = 'Введите корректный номер'
     if (!addStaffForm.password) e.password = 'Придумайте пароль'
     else if (addStaffForm.password.length < 8) e.password = 'Минимум 8 символов'
     else if (!/[A-Z]/.test(addStaffForm.password)) e.password = 'Нужна хотя бы 1 заглавная буква'
@@ -713,7 +713,7 @@ const AdminPanel = () => {
       lastName: addStaffForm.lastName.trim(),
       middleName: addStaffForm.middleName.trim() || null,
       emailOrLogin: addStaffForm.emailOrLogin.trim(),
-      phone: addStaffForm.phone,
+      phone: addStaffForm.phone.trim() || null,
       password: addStaffForm.password,
       role: addStaffForm.role,
     })
@@ -1236,7 +1236,7 @@ const AdminPanel = () => {
                       </div>
 
                       <div className="admin-staff-modal__field">
-                        <label>Телефон</label>
+                        <label>Телефон <span style={{ fontWeight: 400, color: '#aaa', fontSize: 12 }}>(необязательно)</span></label>
                         <IMaskInput mask="+{7} (000) 000 00 00" className={addStaffErrors.phone ? 'is-error' : ''} placeholder="+7 (___) ___ __ __" value={addStaffForm.phone} onAccept={v => setAddStaffForm(p => ({ ...p, phone: v }))} />
                         {addStaffErrors.phone && <span className="admin-staff-modal__err">{addStaffErrors.phone}</span>}
                       </div>
