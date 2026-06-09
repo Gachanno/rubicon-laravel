@@ -18,7 +18,8 @@ class StatisticsController extends Controller
         $to      = $request->input('to');
         $source  = $request->input('source', '');
 
-        if (!$id) {
+        // type='all' — агрегируем продажи по всем товарам, id не требуется
+        if ($type !== 'all' && !$id) {
             return response()->json([]);
         }
 

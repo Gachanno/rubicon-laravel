@@ -2,13 +2,15 @@
 
 namespace Database\Seeders;
 
+use Database\Seeders\Concerns\FetchesStockImages;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
 class ProductSeeder extends Seeder
 {
+    use FetchesStockImages;
+
     /**
      * English stock-photo search keyword per product id.
      * Used to fetch a relevant image from Pixabay when a product has no local image.
@@ -146,12 +148,34 @@ class ProductSeeder extends Seeder
             ['id' => 100,'name' => 'Набор для подвязки помидоров 20шт', 'price' => 330,   'images' => null,                                              'description' => 'Набор для подвязки томатов',                     'available_quantity' => 180, 'categories' => [1,14]],
         ];
 
-        $hasApiKey = !empty(config('services.pixabay.key'));
+        // Средние розничные цены по рынку (Московская область, ₽).
+        $marketPrices = [
+            1 => 790, 2 => 650, 3 => 6490, 4 => 590, 5 => 450, 6 => 520, 7 => 35, 8 => 45,
+            9 => 40, 10 => 45, 11 => 35, 12 => 35, 13 => 40, 14 => 30, 15 => 120, 16 => 110,
+            17 => 45, 18 => 55, 19 => 38, 20 => 32, 21 => 33, 22 => 40, 23 => 48, 24 => 30,
+            25 => 28, 26 => 32, 27 => 38, 28 => 35, 29 => 45, 30 => 40, 31 => 50, 32 => 50,
+            33 => 95, 34 => 110, 35 => 100, 36 => 95, 37 => 120, 38 => 130, 39 => 125, 40 => 115,
+            41 => 690, 42 => 750, 43 => 9990, 44 => 32900, 45 => 690, 46 => 3990, 47 => 850, 48 => 1190,
+            49 => 590, 50 => 750, 51 => 420, 52 => 550, 53 => 290, 54 => 250, 55 => 1990, 56 => 480,
+            57 => 590, 58 => 390, 59 => 4490, 60 => 4990, 61 => 4290, 62 => 1190, 63 => 1490, 64 => 4290,
+            65 => 390, 66 => 590, 67 => 350, 68 => 690, 69 => 2990, 70 => 30, 71 => 33, 72 => 45,
+            73 => 5990, 74 => 690, 75 => 3490, 76 => 390, 77 => 190, 78 => 3990, 79 => 1490, 80 => 1290,
+            81 => 690, 82 => 4490, 83 => 30, 84 => 32, 85 => 28, 86 => 590, 87 => 5490, 88 => 48,
+            89 => 55, 90 => 180, 91 => 40, 92 => 35, 93 => 38, 94 => 1490, 95 => 250, 96 => 390,
+            97 => 190, 98 => 220, 99 => 6990, 100 => 290,
+        ];
+
+        $hasApiKey = $this->stockImagesEnabled();
         $fetched = 0;
 
         foreach ($products as $productData) {
             $categoryIds = $productData['categories'];
             unset($productData['categories']);
+
+            // Цена — средняя по рынку
+            if (isset($marketPrices[$productData['id']])) {
+                $productData['price'] = $marketPrices[$productData['id']];
+            }
 
             // A few products are intentionally left without a photo so staff can
             // find them via the "Нет фото" filter in the admin panel.
@@ -162,7 +186,7 @@ class ProductSeeder extends Seeder
                 $query = $this->imageQueries[$productData['id']] ?? null;
                 if ($query) {
                     $slug = $productData['id'] . '-' . Str::slug($query);
-                    $path = $this->fetchPixabayImage($query, $slug);
+                    $path = $this->fetchStockImage($query, $slug);
                     if ($path) {
                         $productData['images'] = json_encode([$path]);
                         $fetched++;
@@ -200,65 +224,6 @@ class ProductSeeder extends Seeder
             $this->command?->warn('PIXABAY_API_KEY не задан в .env — товары без локальных фото остались без изображений.');
         } else {
             $this->command?->info("Pixabay: загружено изображений — {$fetched}.");
-        }
-    }
-
-    /**
-     * Fetch the first matching photo from Pixabay and store it in public/dataImg/seed.
-     * Returns the public path (e.g. /dataImg/seed/7-carrot.jpg) or null on failure.
-     * Already-downloaded files are reused, so re-seeding is fast and works offline.
-     */
-    private function fetchPixabayImage(string $query, string $slug): ?string
-    {
-        $key = config('services.pixabay.key');
-        if (!$key) {
-            return null;
-        }
-
-        $destDir    = public_path('dataImg/seed');
-        $destFile   = $destDir . DIRECTORY_SEPARATOR . $slug . '.jpg';
-        $publicPath = '/dataImg/seed/' . $slug . '.jpg';
-
-        if (file_exists($destFile)) {
-            return $publicPath; // cached from a previous seed run
-        }
-
-        if (!is_dir($destDir)) {
-            mkdir($destDir, 0775, true);
-        }
-
-        try {
-            // withoutVerifying(): local dev convenience — many Windows/OSPanel PHP
-            // installs ship without a configured CA bundle (cURL error 60).
-            $resp = Http::withoutVerifying()->timeout(20)->get('https://pixabay.com/api/', [
-                'key'         => $key,
-                'q'           => $query,
-                'image_type'  => 'photo',
-                'orientation' => 'horizontal',
-                'safesearch'  => 'true',
-                'per_page'    => 3,
-            ]);
-
-            if (!$resp->ok()) {
-                return null;
-            }
-
-            $hits = $resp->json('hits') ?? [];
-            $url  = $hits[0]['webformatURL'] ?? $hits[0]['largeImageURL'] ?? null;
-            if (!$url) {
-                return null;
-            }
-
-            $img = Http::withoutVerifying()->timeout(30)->get($url);
-            if (!$img->ok()) {
-                return null;
-            }
-
-            file_put_contents($destFile, $img->body());
-
-            return $publicPath;
-        } catch (\Throwable $e) {
-            return null;
         }
     }
 }

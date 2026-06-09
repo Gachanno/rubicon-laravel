@@ -5,358 +5,191 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * Заполняет характеристики товаров на основе ШАБЛОНОВ их категорий.
+ *
+ * Гарантирует: если у категории товара есть шаблонные характеристики —
+ * они ВСЕ заполнены реалистичными значениями и привязаны к шаблону
+ * (template_id), чтобы по ним работала фильтрация. Дополнительно к каждому
+ * товару добавляются свободные характеристики (производитель, страна и т.п.).
+ */
 class ProductCharacteristicSeeder extends Seeder
 {
+    private array $brands = ['Сибртех', 'ЗУБР', 'PALISAD', 'GRINDA', 'Gardena', 'Fiskars', 'Росток', 'Калибр', 'Агрос', 'СоюзСад'];
+    private array $countries = ['Россия', 'Россия', 'Россия', 'Россия', 'Китай', 'Германия', 'Польша'];
+
     public function run(): void
     {
-        $chars = [
-            ['product_id' => 1, 'name' => 'Материал', 'value' => 'Металл'],
-            ['product_id' => 1, 'name' => 'Вес', 'value' => '0.3 кг'],
-            ['product_id' => 1, 'name' => 'Цвет', 'value' => 'Зеленый'],
-            ['product_id' => 2, 'name' => 'Материал', 'value' => 'Пластик'],
-            ['product_id' => 2, 'name' => 'Вес', 'value' => '0.5 кг'],
-            ['product_id' => 2, 'name' => 'Цвет', 'value' => 'Синий'],
-            ['product_id' => 3, 'name' => 'Материал', 'value' => 'Сталь'],
-            ['product_id' => 3, 'name' => 'Вес', 'value' => '1.0 кг'],
-            ['product_id' => 3, 'name' => 'Цвет', 'value' => 'Черный'],
-            ['product_id' => 4, 'name' => 'Материал', 'value' => 'Композит'],
-            ['product_id' => 4, 'name' => 'Вес', 'value' => '0.5 кг'],
-            ['product_id' => 4, 'name' => 'Цвет', 'value' => 'Коричневый'],
-            ['product_id' => 5, 'name' => 'Материал', 'value' => 'Составной'],
-            ['product_id' => 5, 'name' => 'Вес', 'value' => '1.5 кг'],
-            ['product_id' => 5, 'name' => 'Цвет', 'value' => 'Белый'],
-            ['product_id' => 6, 'name' => 'Материал', 'value' => 'Керамика'],
-            ['product_id' => 6, 'name' => 'Вес', 'value' => '0.8 кг'],
-            ['product_id' => 6, 'name' => 'Цвет', 'value' => 'Желтый'],
-            ['product_id' => 7, 'name' => 'Материал', 'value' => 'Семенной пакет'],
-            ['product_id' => 7, 'name' => 'Вес', 'value' => '0.05 кг'],
-            ['product_id' => 7, 'name' => 'Цвет', 'value' => 'Бежевый'],
-            ['product_id' => 8, 'name' => 'Материал', 'value' => 'Семенной пакет'],
-            ['product_id' => 8, 'name' => 'Вес', 'value' => '0.05 кг'],
-            ['product_id' => 8, 'name' => 'Цвет', 'value' => 'Красный'],
-            ['product_id' => 9, 'name' => 'Материал', 'value' => 'Семенной пакет'],
-            ['product_id' => 9, 'name' => 'Вес', 'value' => '0.06 кг'],
-            ['product_id' => 9, 'name' => 'Цвет', 'value' => 'Зеленый'],
-            ['product_id' => 10, 'name' => 'Материал упаковки', 'value' => 'Бумага+фольга'],
-            ['product_id' => 10, 'name' => 'Количество семян', 'value' => '30-40 шт'],
-            ['product_id' => 10, 'name' => 'Дни до урожая', 'value' => '60-70 дней'],
-            ['product_id' => 10, 'name' => 'Тип грунта', 'value' => 'Плодородный, рыхлый'],
-            ['product_id' => 10, 'name' => 'Требуемое освещение', 'value' => 'Полное солнце'],
-            ['product_id' => 10, 'name' => 'Срок хранения', 'value' => '3 года'],
-            ['product_id' => 10, 'name' => 'Производитель', 'value' => 'Агро-Плюс'],
-            ['product_id' => 10, 'name' => 'Выход всхожести', 'value' => '85-90%'],
-            ['product_id' => 11, 'name' => 'Материал упаковки', 'value' => 'Бумага+фольга'],
-            ['product_id' => 11, 'name' => 'Количество семян', 'value' => '20-25 шт'],
-            ['product_id' => 11, 'name' => 'Дни до урожая', 'value' => '70-85 дней'],
-            ['product_id' => 11, 'name' => 'Расстояние при посадке', 'value' => '20-30 см'],
-            ['product_id' => 11, 'name' => 'Требуемое освещение', 'value' => 'Полное солнце'],
-            ['product_id' => 11, 'name' => 'Тип почвы', 'value' => 'Нейтральная, плодородная'],
-            ['product_id' => 11, 'name' => 'Срок хранения', 'value' => '4 года'],
-            ['product_id' => 11, 'name' => 'Выход всхожести', 'value' => '80-85%'],
-            ['product_id' => 12, 'name' => 'Материал упаковки', 'value' => 'Полипропилен'],
-            ['product_id' => 12, 'name' => 'Количество семян', 'value' => '35-45 шт'],
-            ['product_id' => 12, 'name' => 'Дни до урожая', 'value' => '45-55 дней'],
-            ['product_id' => 12, 'name' => 'Глубина посадки', 'value' => '3-4 см'],
-            ['product_id' => 12, 'name' => 'Расстояние при посадке', 'value' => '30 см'],
-            ['product_id' => 12, 'name' => 'Температура для роста', 'value' => '18-24°С'],
-            ['product_id' => 12, 'name' => 'Срок хранения', 'value' => '3 года'],
-            ['product_id' => 13, 'name' => 'Материал упаковки', 'value' => 'Бумага+ламинат'],
-            ['product_id' => 13, 'name' => 'Количество семян', 'value' => '10-15 шт'],
-            ['product_id' => 13, 'name' => 'Дни до урожая', 'value' => '80-90 дней'],
-            ['product_id' => 13, 'name' => 'Глубина посадки', 'value' => '5 см'],
-            ['product_id' => 13, 'name' => 'Расстояние при посадке', 'value' => '50-60 см'],
-            ['product_id' => 13, 'name' => 'Требуемое освещение', 'value' => 'Полное солнце'],
-            ['product_id' => 13, 'name' => 'Частота полива', 'value' => 'Умеренный'],
-            ['product_id' => 13, 'name' => 'Выход всхожести', 'value' => '75-80%'],
-            ['product_id' => 14, 'name' => 'Материал упаковки', 'value' => 'Крафт-бумага'],
-            ['product_id' => 14, 'name' => 'Количество семян', 'value' => '50-60 шт'],
-            ['product_id' => 14, 'name' => 'Дни до урожая', 'value' => '20-25 дней'],
-            ['product_id' => 14, 'name' => 'Глубина посадки', 'value' => '1-2 см'],
-            ['product_id' => 14, 'name' => 'Расстояние при посадке', 'value' => '5-10 см'],
-            ['product_id' => 14, 'name' => 'Температура для роста', 'value' => '10-20°С'],
-            ['product_id' => 14, 'name' => 'Устойчивость к холоду', 'value' => 'Высокая'],
-            ['product_id' => 15, 'name' => 'Материал упаковки', 'value' => 'Бумага+фольга'],
-            ['product_id' => 15, 'name' => 'Количество семян', 'value' => '15-20 шт'],
-            ['product_id' => 15, 'name' => 'Дни до урожая', 'value' => '15-20 дней'],
-            ['product_id' => 15, 'name' => 'Тип растения', 'value' => 'Ягодный кустарник'],
-            ['product_id' => 15, 'name' => 'Высота при посадке', 'value' => '100-150 см'],
-            ['product_id' => 15, 'name' => 'Требуемое освещение', 'value' => 'Полусень/солнце'],
-            ['product_id' => 16, 'name' => 'Материал упаковки', 'value' => 'Ламинированная бумага'],
-            ['product_id' => 16, 'name' => 'Количество семян', 'value' => '20-25 шт'],
-            ['product_id' => 16, 'name' => 'Дни до урожая', 'value' => '150+ дней'],
-            ['product_id' => 16, 'name' => 'Тип растения', 'value' => 'Плодовое дерево'],
-            ['product_id' => 16, 'name' => 'Срок плодоношения', 'value' => '3-4 года'],
-            ['product_id' => 16, 'name' => 'Требуемое освещение', 'value' => 'Полное солнце'],
-            ['product_id' => 17, 'name' => 'Материал упаковки', 'value' => 'Полипропилен'],
-            ['product_id' => 17, 'name' => 'Количество семян', 'value' => '25-35 шт'],
-            ['product_id' => 17, 'name' => 'Дни до урожая', 'value' => '65-75 дней'],
-            ['product_id' => 17, 'name' => 'Сладость (Брикс)', 'value' => '20-24%'],
-            ['product_id' => 17, 'name' => 'Расстояние при посадке', 'value' => '25 см'],
-            ['product_id' => 17, 'name' => 'Требуемое освещение', 'value' => 'Полное солнце'],
-            ['product_id' => 17, 'name' => 'Выход всхожести', 'value' => '85%'],
-            ['product_id' => 18, 'name' => 'Материал упаковки', 'value' => 'Бумага+фольга'],
-            ['product_id' => 18, 'name' => 'Количество семян', 'value' => '25-30 шт'],
-            ['product_id' => 18, 'name' => 'Дни до урожая', 'value' => '55-65 дней'],
-            ['product_id' => 18, 'name' => 'Тип климата', 'value' => 'Для теплиц'],
-            ['product_id' => 18, 'name' => 'Расстояние при посадке', 'value' => '15-20 см'],
-            ['product_id' => 18, 'name' => 'Устойчивость к болезням', 'value' => 'Средняя'],
-            ['product_id' => 18, 'name' => 'Требуемое освещение', 'value' => 'Рассеянный свет'],
-            ['product_id' => 19, 'name' => 'Материал упаковки', 'value' => 'Крафт-бумага'],
-            ['product_id' => 19, 'name' => 'Количество семян', 'value' => '30-40 шт'],
-            ['product_id' => 19, 'name' => 'Дни до урожая', 'value' => '50-65 дней'],
-            ['product_id' => 19, 'name' => 'Время посева', 'value' => 'Ранняя весна'],
-            ['product_id' => 19, 'name' => 'Расстояние при посадке', 'value' => '10-15 см'],
-            ['product_id' => 19, 'name' => 'Требуемое освещение', 'value' => 'Полное солнце'],
-            ['product_id' => 19, 'name' => 'Выход всхожести', 'value' => '80%'],
-            ['product_id' => 20, 'name' => 'Материал упаковки', 'value' => 'Полипропилен'],
-            ['product_id' => 20, 'name' => 'Количество семян', 'value' => '20-30 шт'],
-            ['product_id' => 20, 'name' => 'Дни до урожая', 'value' => '70-80 дней'],
-            ['product_id' => 20, 'name' => 'Расстояние при посадке', 'value' => '20-25 см'],
-            ['product_id' => 20, 'name' => 'Глубина посадки', 'value' => '2-3 см'],
-            ['product_id' => 20, 'name' => 'Требуемое освещение', 'value' => 'Полное солнце'],
-            ['product_id' => 20, 'name' => 'Срок хранения', 'value' => '3-4 года'],
-            ['product_id' => 21, 'name' => 'Материал', 'value' => 'Семенной пакет'],
-            ['product_id' => 21, 'name' => 'Вес', 'value' => '0.04 кг'],
-            ['product_id' => 21, 'name' => 'Цвет', 'value' => 'Желтый'],
-            ['product_id' => 22, 'name' => 'Материал', 'value' => 'Семенной пакет'],
-            ['product_id' => 22, 'name' => 'Вес', 'value' => '0.06 кг'],
-            ['product_id' => 22, 'name' => 'Цвет', 'value' => 'Оранжевый'],
-            ['product_id' => 23, 'name' => 'Материал', 'value' => 'Семенной пакет'],
-            ['product_id' => 23, 'name' => 'Вес', 'value' => '0.05 кг'],
-            ['product_id' => 23, 'name' => 'Цвет', 'value' => 'Бежевый'],
-            ['product_id' => 24, 'name' => 'Материал', 'value' => 'Семенной пакет'],
-            ['product_id' => 24, 'name' => 'Вес', 'value' => '0.03 кг'],
-            ['product_id' => 24, 'name' => 'Цвет', 'value' => 'Зеленый'],
-            ['product_id' => 25, 'name' => 'Материал', 'value' => 'Семенной пакет'],
-            ['product_id' => 25, 'name' => 'Вес', 'value' => '0.04 кг'],
-            ['product_id' => 25, 'name' => 'Цвет', 'value' => 'Белый'],
-            ['product_id' => 26, 'name' => 'Материал', 'value' => 'Семенной пакет'],
-            ['product_id' => 26, 'name' => 'Вес', 'value' => '0.05 кг'],
-            ['product_id' => 26, 'name' => 'Цвет', 'value' => 'Зеленый'],
-            ['product_id' => 27, 'name' => 'Материал', 'value' => 'Семенной пакет'],
-            ['product_id' => 27, 'name' => 'Вес', 'value' => '0.04 кг'],
-            ['product_id' => 27, 'name' => 'Цвет', 'value' => 'Красный'],
-            ['product_id' => 28, 'name' => 'Материал', 'value' => 'Семенной пакет'],
-            ['product_id' => 28, 'name' => 'Вес', 'value' => '0.06 кг'],
-            ['product_id' => 28, 'name' => 'Цвет', 'value' => 'Бежевый'],
-            ['product_id' => 29, 'name' => 'Материал', 'value' => 'Семенной пакет'],
-            ['product_id' => 29, 'name' => 'Вес', 'value' => '0.05 кг'],
-            ['product_id' => 29, 'name' => 'Цвет', 'value' => 'Коричневый'],
-            ['product_id' => 30, 'name' => 'Материал', 'value' => 'Семенной пакет'],
-            ['product_id' => 30, 'name' => 'Вес', 'value' => '0.05 кг'],
-            ['product_id' => 30, 'name' => 'Цвет', 'value' => 'Зеленый'],
-            ['product_id' => 31, 'name' => 'Материал', 'value' => 'Семенной пакет'],
-            ['product_id' => 31, 'name' => 'Вес', 'value' => '0.06 кг'],
-            ['product_id' => 31, 'name' => 'Цвет', 'value' => 'Красный'],
-            ['product_id' => 32, 'name' => 'Материал', 'value' => 'Семенной пакет'],
-            ['product_id' => 32, 'name' => 'Вес', 'value' => '0.05 кг'],
-            ['product_id' => 32, 'name' => 'Цвет', 'value' => 'Желтый'],
-            ['product_id' => 33, 'name' => 'Материал', 'value' => 'Семенной пакет'],
-            ['product_id' => 33, 'name' => 'Вес', 'value' => '0.04 кг'],
-            ['product_id' => 33, 'name' => 'Цвет', 'value' => 'Зеленый'],
-            ['product_id' => 34, 'name' => 'Материал', 'value' => 'Семенной пакет'],
-            ['product_id' => 34, 'name' => 'Вес', 'value' => '0.05 кг'],
-            ['product_id' => 34, 'name' => 'Цвет', 'value' => 'Бежевый'],
-            ['product_id' => 35, 'name' => 'Материал', 'value' => 'Семенной пакет'],
-            ['product_id' => 35, 'name' => 'Вес', 'value' => '0.06 кг'],
-            ['product_id' => 35, 'name' => 'Цвет', 'value' => 'Красный'],
-            ['product_id' => 36, 'name' => 'Материал', 'value' => 'Семенной пакет'],
-            ['product_id' => 36, 'name' => 'Вес', 'value' => '0.05 кг'],
-            ['product_id' => 36, 'name' => 'Цвет', 'value' => 'Зеленый'],
-            ['product_id' => 37, 'name' => 'Материал', 'value' => 'Семенной пакет'],
-            ['product_id' => 37, 'name' => 'Вес', 'value' => '0.04 кг'],
-            ['product_id' => 37, 'name' => 'Цвет', 'value' => 'Желтый'],
-            ['product_id' => 38, 'name' => 'Материал', 'value' => 'Семенной пакет'],
-            ['product_id' => 38, 'name' => 'Вес', 'value' => '0.05 кг'],
-            ['product_id' => 38, 'name' => 'Цвет', 'value' => 'Бежевый'],
-            ['product_id' => 39, 'name' => 'Материал', 'value' => 'Семенной пакет'],
-            ['product_id' => 39, 'name' => 'Вес', 'value' => '0.06 кг'],
-            ['product_id' => 39, 'name' => 'Цвет', 'value' => 'Красный'],
-            ['product_id' => 40, 'name' => 'Материал', 'value' => 'Семенной пакет'],
-            ['product_id' => 40, 'name' => 'Вес', 'value' => '0.05 кг'],
-            ['product_id' => 40, 'name' => 'Цвет', 'value' => 'Зеленый'],
-            ['product_id' => 41, 'name' => 'Материал', 'value' => 'Дерево'],
-            ['product_id' => 41, 'name' => 'Высота', 'value' => '120 см'],
-            ['product_id' => 41, 'name' => 'Возраст саженца', 'value' => '1 год'],
-            ['product_id' => 42, 'name' => 'Материал', 'value' => 'Дерево'],
-            ['product_id' => 42, 'name' => 'Высота', 'value' => '110 см'],
-            ['product_id' => 42, 'name' => 'Возраст саженца', 'value' => '2 года'],
-            ['product_id' => 43, 'name' => 'Мощность', 'value' => '1600 Вт'],
-            ['product_id' => 43, 'name' => 'Вес', 'value' => '25 кг'],
-            ['product_id' => 43, 'name' => 'Гарантия', 'value' => '1 год'],
-            ['product_id' => 44, 'name' => 'Мощность', 'value' => '5 л.с.'],
-            ['product_id' => 44, 'name' => 'Вес', 'value' => '120 кг'],
-            ['product_id' => 44, 'name' => 'Тип двигателя', 'value' => 'Бензиновый'],
-            ['product_id' => 45, 'name' => 'Объем', 'value' => '5 л'],
-            ['product_id' => 45, 'name' => 'Материал', 'value' => 'Пластик'],
-            ['product_id' => 45, 'name' => 'Рабочее давление', 'value' => '2 бар'],
-            ['product_id' => 46, 'name' => 'Объем', 'value' => '12 л'],
-            ['product_id' => 46, 'name' => 'Питание', 'value' => 'Электро'],
-            ['product_id' => 46, 'name' => 'Вес', 'value' => '8 кг'],
-            ['product_id' => 47, 'name' => 'Материал', 'value' => 'Сталь'],
-            ['product_id' => 47, 'name' => 'Длина лезвия', 'value' => '6 см'],
-            ['product_id' => 47, 'name' => 'Гарантия', 'value' => '6 мес'],
-            ['product_id' => 48, 'name' => 'Материал', 'value' => 'Сталь'],
-            ['product_id' => 48, 'name' => 'Вес', 'value' => '2.2 кг'],
-            ['product_id' => 48, 'name' => 'Длина', 'value' => '80 см'],
-            ['product_id' => 49, 'name' => 'Материал', 'value' => 'Сталь'],
-            ['product_id' => 49, 'name' => 'Длина', 'value' => '100 см'],
-            ['product_id' => 49, 'name' => 'Вес', 'value' => '2.5 кг'],
-            ['product_id' => 50, 'name' => 'Материал', 'value' => 'Сталь'],
-            ['product_id' => 50, 'name' => 'Длина', 'value' => '130 см'],
-            ['product_id' => 50, 'name' => 'Вес', 'value' => '1.8 кг'],
-            ['product_id' => 51, 'name' => 'Материал', 'value' => 'Металл'],
-            ['product_id' => 51, 'name' => 'Ширина', 'value' => '10 см'],
-            ['product_id' => 51, 'name' => 'Вес', 'value' => '0.7 кг'],
-            ['product_id' => 52, 'name' => 'Материал', 'value' => 'Пластик'],
-            ['product_id' => 52, 'name' => 'Длина', 'value' => '140 см'],
-            ['product_id' => 52, 'name' => 'Вес', 'value' => '0.9 кг'],
-            ['product_id' => 53, 'name' => 'Материал', 'value' => 'Металл'],
-            ['product_id' => 53, 'name' => 'Длина', 'value' => '50 м'],
-            ['product_id' => 53, 'name' => 'Толщина', 'value' => '2 мм'],
-            ['product_id' => 54, 'name' => 'Материал', 'value' => 'Металл'],
-            ['product_id' => 54, 'name' => 'Длина', 'value' => '30 см'],
-            ['product_id' => 54, 'name' => 'Назначение', 'value' => 'Очистка'],
-            ['product_id' => 55, 'name' => 'Материал', 'value' => 'Сталь'],
-            ['product_id' => 55, 'name' => 'Длина', 'value' => '250 см'],
-            ['product_id' => 55, 'name' => 'Вес', 'value' => '1.6 кг'],
-            ['product_id' => 56, 'name' => 'Материал', 'value' => 'Металл, пластик'],
-            ['product_id' => 56, 'name' => 'Длина', 'value' => '160 см'],
-            ['product_id' => 56, 'name' => 'Вес', 'value' => '0.6 кг'],
-            ['product_id' => 57, 'name' => 'Материал', 'value' => 'Металл'],
-            ['product_id' => 57, 'name' => 'Количество зубьев', 'value' => '3'],
-            ['product_id' => 57, 'name' => 'Вес', 'value' => '0.9 кг'],
-            ['product_id' => 58, 'name' => 'Материал', 'value' => 'Сталь'],
-            ['product_id' => 58, 'name' => 'Длина', 'value' => '35 см'],
-            ['product_id' => 58, 'name' => 'Вес', 'value' => '0.7 кг'],
-            ['product_id' => 59, 'name' => 'Питание', 'value' => 'Аккумулятор'],
-            ['product_id' => 59, 'name' => 'Напряжение', 'value' => '18 В'],
-            ['product_id' => 59, 'name' => 'Вес', 'value' => '1.2 кг'],
-            ['product_id' => 60, 'name' => 'Питание', 'value' => 'Электро'],
-            ['product_id' => 60, 'name' => 'Мощность', 'value' => '800 Вт'],
-            ['product_id' => 60, 'name' => 'Вес', 'value' => '4.5 кг'],
-            ['product_id' => 61, 'name' => 'Питание', 'value' => 'Аккумулятор'],
-            ['product_id' => 61, 'name' => 'Мощность', 'value' => '1200 Вт'],
-            ['product_id' => 61, 'name' => 'Вес', 'value' => '2.0 кг'],
-            ['product_id' => 62, 'name' => 'Тип', 'value' => 'LED'],
-            ['product_id' => 62, 'name' => 'Мощность', 'value' => '20 Вт'],
-            ['product_id' => 62, 'name' => 'Напряжение', 'value' => '12 В'],
-            ['product_id' => 63, 'name' => 'Материал', 'value' => 'Камень'],
-            ['product_id' => 63, 'name' => 'Длина плиты', 'value' => '30 см'],
-            ['product_id' => 63, 'name' => 'Толщина', 'value' => '2 см'],
-            ['product_id' => 64, 'name' => 'Объем', 'value' => '200 л'],
-            ['product_id' => 64, 'name' => 'Материал', 'value' => 'Пластик'],
-            ['product_id' => 64, 'name' => 'Цвет', 'value' => 'Темно-зеленый'],
-            ['product_id' => 65, 'name' => 'Объем', 'value' => '1 л'],
-            ['product_id' => 65, 'name' => 'Тип', 'value' => 'Стимулятор'],
-            ['product_id' => 65, 'name' => 'Производитель', 'value' => 'Локальный'],
-            ['product_id' => 66, 'name' => 'Объем', 'value' => '0.5 л'],
-            ['product_id' => 66, 'name' => 'Тип', 'value' => 'Фунгицид'],
-            ['product_id' => 66, 'name' => 'Гарантия', 'value' => '6 мес'],
-            ['product_id' => 67, 'name' => 'Объем', 'value' => '2 л'],
-            ['product_id' => 67, 'name' => 'Материал', 'value' => 'Пластик'],
-            ['product_id' => 67, 'name' => 'Вес', 'value' => '0.6 кг'],
-            ['product_id' => 68, 'name' => 'Вес', 'value' => '1 кг'],
-            ['product_id' => 68, 'name' => 'Тип', 'value' => 'Семена газонные'],
-            ['product_id' => 68, 'name' => 'Производитель', 'value' => 'Бренд A'],
-            ['product_id' => 69, 'name' => 'Вес', 'value' => '5 кг'],
-            ['product_id' => 69, 'name' => 'Тип', 'value' => 'Семена газонные'],
-            ['product_id' => 69, 'name' => 'Производитель', 'value' => 'Бренд A'],
-            ['product_id' => 70, 'name' => 'Материал', 'value' => 'Семенной пакет'],
-            ['product_id' => 70, 'name' => 'Вес', 'value' => '0.03 кг'],
-            ['product_id' => 70, 'name' => 'Цвет', 'value' => 'Зеленый'],
-            ['product_id' => 71, 'name' => 'Материал', 'value' => 'Семенной пакет'],
-            ['product_id' => 71, 'name' => 'Вес', 'value' => '0.02 кг'],
-            ['product_id' => 71, 'name' => 'Цвет', 'value' => 'Красный'],
-            ['product_id' => 72, 'name' => 'Материал', 'value' => 'Семенной пакет'],
-            ['product_id' => 72, 'name' => 'Вес', 'value' => '0.04 кг'],
-            ['product_id' => 72, 'name' => 'Цвет', 'value' => 'Бежевый'],
-            ['product_id' => 73, 'name' => 'Мощность', 'value' => '2000 Вт'],
-            ['product_id' => 73, 'name' => 'Вес', 'value' => '6 кг'],
-            ['product_id' => 73, 'name' => 'Гарантия', 'value' => '1 год'],
-            ['product_id' => 74, 'name' => 'Материал', 'value' => 'Металл'],
-            ['product_id' => 74, 'name' => 'Длина', 'value' => '25 см'],
-            ['product_id' => 74, 'name' => 'Вес', 'value' => '0.8 кг'],
-            ['product_id' => 75, 'name' => 'Объем', 'value' => '100 л'],
-            ['product_id' => 75, 'name' => 'Материал', 'value' => 'Металл/Пластик'],
-            ['product_id' => 75, 'name' => 'Вес', 'value' => '15 кг'],
-            ['product_id' => 76, 'name' => 'Объем', 'value' => '200 л'],
-            ['product_id' => 76, 'name' => 'Материал', 'value' => 'Ткань'],
-            ['product_id' => 76, 'name' => 'Цвет', 'value' => 'Черный'],
-            ['product_id' => 77, 'name' => 'Материал', 'value' => 'Ткань'],
-            ['product_id' => 77, 'name' => 'Размер', 'value' => 'L'],
-            ['product_id' => 77, 'name' => 'Цвет', 'value' => 'Зеленый'],
-            ['product_id' => 78, 'name' => 'Материал', 'value' => 'Металл/Пластик'],
-            ['product_id' => 78, 'name' => 'Грузоподъемность', 'value' => '80 кг'],
-            ['product_id' => 78, 'name' => 'Вес', 'value' => '10 кг'],
-            ['product_id' => 79, 'name' => 'Комплектация', 'value' => '5 предметов'],
-            ['product_id' => 79, 'name' => 'Материал', 'value' => 'Металл/Пластик'],
-            ['product_id' => 79, 'name' => 'Гарантия', 'value' => '6 мес'],
-            ['product_id' => 80, 'name' => 'Длина', 'value' => '20 м'],
-            ['product_id' => 80, 'name' => 'Материал', 'value' => 'Резина'],
-            ['product_id' => 80, 'name' => 'Вес', 'value' => '2.2 кг'],
-            ['product_id' => 81, 'name' => 'Тип', 'value' => 'LED'],
-            ['product_id' => 81, 'name' => 'Мощность', 'value' => '6 Вт'],
-            ['product_id' => 81, 'name' => 'Защита', 'value' => 'IP44'],
-            ['product_id' => 82, 'name' => 'Материал', 'value' => 'Пластик'],
-            ['product_id' => 82, 'name' => 'Вес', 'value' => '3.5 кг'],
-            ['product_id' => 82, 'name' => 'Цвет', 'value' => 'Серый'],
-            ['product_id' => 83, 'name' => 'Материал', 'value' => 'Семенной пакет'],
-            ['product_id' => 83, 'name' => 'Вес', 'value' => '0.02 кг'],
-            ['product_id' => 83, 'name' => 'Цвет', 'value' => 'Красный'],
-            ['product_id' => 84, 'name' => 'Материал', 'value' => 'Семенной пакет'],
-            ['product_id' => 84, 'name' => 'Вес', 'value' => '0.02 кг'],
-            ['product_id' => 84, 'name' => 'Цвет', 'value' => 'Зеленый'],
-            ['product_id' => 85, 'name' => 'Материал', 'value' => 'Семенной пакет'],
-            ['product_id' => 85, 'name' => 'Вес', 'value' => '0.02 кг'],
-            ['product_id' => 85, 'name' => 'Цвет', 'value' => 'Бежевый'],
-            ['product_id' => 86, 'name' => 'Материал', 'value' => 'Металл'],
-            ['product_id' => 86, 'name' => 'Длина', 'value' => '12 см'],
-            ['product_id' => 86, 'name' => 'Вес', 'value' => '0.15 кг'],
-            ['product_id' => 87, 'name' => 'Питание', 'value' => 'Аккумулятор'],
-            ['product_id' => 87, 'name' => 'Объем', 'value' => '8 л'],
-            ['product_id' => 87, 'name' => 'Вес', 'value' => '3.0 кг'],
-            ['product_id' => 88, 'name' => 'Материал', 'value' => 'Семенной пакет'],
-            ['product_id' => 88, 'name' => 'Вес', 'value' => '0.03 кг'],
-            ['product_id' => 88, 'name' => 'Цвет', 'value' => 'Красный'],
-            ['product_id' => 89, 'name' => 'Материал', 'value' => 'Семенной пакет'],
-            ['product_id' => 89, 'name' => 'Вес', 'value' => '0.04 кг'],
-            ['product_id' => 89, 'name' => 'Цвет', 'value' => 'Зеленый'],
-            ['product_id' => 90, 'name' => 'Вес', 'value' => '0.1 кг'],
-            ['product_id' => 90, 'name' => 'Тип', 'value' => 'Семенная смесь'],
-            ['product_id' => 90, 'name' => 'Производитель', 'value' => 'Бренд B'],
-            ['product_id' => 91, 'name' => 'Материал', 'value' => 'Семенной пакет'],
-            ['product_id' => 91, 'name' => 'Вес', 'value' => '0.03 кг'],
-            ['product_id' => 91, 'name' => 'Цвет', 'value' => 'Бежевый'],
-            ['product_id' => 92, 'name' => 'Материал', 'value' => 'Семенной пакет'],
-            ['product_id' => 92, 'name' => 'Вес', 'value' => '0.02 кг'],
-            ['product_id' => 92, 'name' => 'Цвет', 'value' => 'Зеленый'],
-            ['product_id' => 93, 'name' => 'Материал', 'value' => 'Семенной пакет'],
-            ['product_id' => 93, 'name' => 'Вес', 'value' => '0.03 кг'],
-            ['product_id' => 93, 'name' => 'Цвет', 'value' => 'Бежевый'],
-            ['product_id' => 94, 'name' => 'Материал', 'value' => 'Металл'],
-            ['product_id' => 94, 'name' => 'Совместимость', 'value' => 'Триммеры 26-30 мм'],
-            ['product_id' => 94, 'name' => 'Вес', 'value' => '1.2 кг'],
-            ['product_id' => 95, 'name' => 'Количество', 'value' => '50 шт'],
-            ['product_id' => 95, 'name' => 'Материал', 'value' => 'Пластик'],
-            ['product_id' => 95, 'name' => 'Цвет', 'value' => 'Зеленый'],
-            ['product_id' => 96, 'name' => 'Объем', 'value' => '20 л'],
-            ['product_id' => 96, 'name' => 'Тип', 'value' => 'Универсальный'],
-            ['product_id' => 96, 'name' => 'Вес', 'value' => '12 кг'],
-            ['product_id' => 97, 'name' => 'Объем', 'value' => '5 л'],
-            ['product_id' => 97, 'name' => 'Тип', 'value' => 'Для рассады'],
-            ['product_id' => 97, 'name' => 'Вес', 'value' => '3 кг'],
-            ['product_id' => 98, 'name' => 'Длина', 'value' => '10 м'],
-            ['product_id' => 98, 'name' => 'Материал', 'value' => 'Пластик'],
-            ['product_id' => 98, 'name' => 'Цвет', 'value' => 'Зеленый'],
-            ['product_id' => 99, 'name' => 'Материал', 'value' => 'Металл'],
-            ['product_id' => 99, 'name' => 'Вес', 'value' => '18 кг'],
-            ['product_id' => 99, 'name' => 'Гарантия', 'value' => '1 год'],
-            ['product_id' => 100, 'name' => 'Количество', 'value' => '20 шт'],
-            ['product_id' => 100, 'name' => 'Материал', 'value' => 'Пластик'],
-            ['product_id' => 100, 'name' => 'Вес', 'value' => '0.2 кг'],
-        ];
+        // Шаблоны характеристик по категориям
+        $templates = DB::table('characteristic_templates')->get();
+        $tplByCat = [];
+        foreach ($templates as $t) {
+            $tplByCat[$t->category_id][] = $t;
+        }
 
-        DB::table('product_characteristics')->insert($chars);
+        // Категории (для определения родитель/потомок)
+        $cats = DB::table('categories')->get()->keyBy('id');
+
+        // Товары и их категории
+        $products = DB::table('products')->get();
+        $prodCats = [];
+        foreach (DB::table('category_product')->get() as $cp) {
+            $prodCats[$cp->product_id][] = $cp->category_id;
+        }
+
+        $rows = [];
+
+        foreach ($products as $product) {
+            $catIds = $prodCats[$product->id] ?? [];
+
+            // Сначала подкатегории (parent_id != null) — их шаблоны конкретнее,
+            // поэтому при дублировании имени берём вариант подкатегории.
+            usort($catIds, function ($a, $b) use ($cats) {
+                $aChild = isset($cats[$a]) && $cats[$a]->parent_id !== null ? 1 : 0;
+                $bChild = isset($cats[$b]) && $cats[$b]->parent_id !== null ? 1 : 0;
+                return $bChild <=> $aChild;
+            });
+
+            // Собираем уникальные (по имени) шаблоны со всех категорий товара
+            $chosen = [];
+            foreach ($catIds as $catId) {
+                foreach ($tplByCat[$catId] ?? [] as $t) {
+                    if (!isset($chosen[$t->name])) {
+                        $chosen[$t->name] = $t;
+                    }
+                }
+            }
+
+            // Заполняем КАЖДУЮ шаблонную характеристику
+            foreach ($chosen as $t) {
+                $rows[] = [
+                    'product_id'  => $product->id,
+                    'template_id' => $t->id,
+                    'name'        => $t->name,
+                    'value'       => $this->valueForTemplate($t, $product),
+                ];
+            }
+
+            // Доп. свободные характеристики (без шаблона)
+            foreach ($this->extraCharacteristics($product) as $name => $value) {
+                $rows[] = [
+                    'product_id'  => $product->id,
+                    'template_id' => null,
+                    'name'        => $name,
+                    'value'       => $value,
+                ];
+            }
+        }
+
+        foreach (array_chunk($rows, 500) as $chunk) {
+            DB::table('product_characteristics')->insert($chunk);
+        }
+    }
+
+    private function valueForTemplate(object $t, object $product): string
+    {
+        $options = $t->options ? (json_decode($t->options, true) ?: null) : null;
+
+        return match ($t->type) {
+            'select'  => $this->pickSelect(is_array($options) ? array_values($options) : [], $product, $t),
+            'range'   => $this->pickRange(is_array($options) ? $options : [], $product, $t),
+            'boolean' => $this->pickBool($product, $t) ? 'Да' : 'Нет',
+            'text'    => $this->pickText($t, $product),
+            default   => '—',
+        };
+    }
+
+    /**
+     * Для select подбираем подходящий вариант: если корень варианта встречается
+     * в названии товара — берём его (реалистично), иначе детерминированный выбор.
+     */
+    private function pickSelect(array $options, object $product, object $t): string
+    {
+        if (empty($options)) {
+            return '—';
+        }
+
+        $name = $this->mbLower($product->name);
+        foreach ($options as $opt) {
+            $o = $this->mbLower((string) $opt);
+            $stems = array_unique([
+                $o,
+                mb_substr($o, 0, max(3, mb_strlen($o) - 1)),
+                mb_substr($o, 0, max(3, mb_strlen($o) - 2)),
+            ]);
+            foreach ($stems as $stem) {
+                if ($stem !== '' && mb_strpos($name, $stem) !== false) {
+                    return (string) $opt;
+                }
+            }
+        }
+
+        return (string) $options[$this->hash($t->name . '|' . $product->id) % count($options)];
+    }
+
+    private function pickRange(array $opts, object $product, object $t): string
+    {
+        $min  = isset($opts['min']) ? (float) $opts['min'] : 0;
+        $max  = isset($opts['max']) ? (float) $opts['max'] : 1;
+        $unit = $opts['unit'] ?? '';
+        if ($max < $min) {
+            [$min, $max] = [$max, $min];
+        }
+
+        $steps = 10;
+        $frac  = ($this->hash($t->name . '#' . $product->id) % ($steps + 1)) / $steps;
+        $val   = $min + $frac * ($max - $min);
+
+        // Точность зависит от единицы измерения: кг/л — дробные, остальное — целые.
+        // Гарантируем, что значение не округлится до нуля.
+        if (in_array($unit, ['кг', 'л'], true)) {
+            $val = $max <= 2 ? round($val, 2) : round($val, 1);
+            if ($val <= 0) {
+                $val = $max <= 2 ? round(max($min, 0.05), 2) : round(max($min, 0.1), 1);
+            }
+        } else {
+            $val = (float) round($val);
+            if ($val < 1) {
+                $val = (float) max(1, (int) ceil($min));
+            }
+        }
+
+        $str = rtrim(rtrim(number_format($val, 2, '.', ''), '0'), '.');
+
+        return $unit !== '' ? "{$str} {$unit}" : $str;
+    }
+
+    private function pickBool(object $product, object $t): bool
+    {
+        // ~60% «Да» — детерминированно по товару и шаблону
+        return ($this->hash($t->name . '!' . $product->id) % 5) < 3;
+    }
+
+    private function pickText(object $t, object $product): string
+    {
+        if (mb_stripos($t->name, 'NPK') !== false) {
+            $variants = ['10:10:10', '16:16:16', '20:20:20', '13:19:24', '11:11:21'];
+            return $variants[$this->hash('npk' . $product->id) % count($variants)];
+        }
+
+        return 'Соответствует ГОСТ';
+    }
+
+    private function extraCharacteristics(object $product): array
+    {
+        return [
+            'Производитель'       => $this->brands[$product->id % count($this->brands)],
+            'Страна производства' => $this->countries[$product->id % count($this->countries)],
+        ];
+    }
+
+    private function hash(string $s): int
+    {
+        return abs(crc32($s));
+    }
+
+    private function mbLower(string $s): string
+    {
+        return function_exists('mb_strtolower') ? mb_strtolower($s) : strtolower($s);
     }
 }

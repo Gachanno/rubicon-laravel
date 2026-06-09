@@ -7,7 +7,7 @@ import { useAppDispatch } from '../store/hooks'
 import { setPage, setLimit, setTotal, setSort, setSortExplicit } from '../store/ordersSlice'
 import { requestsService } from '../api/api'
 import { Rating } from 'react-simple-star-rating'
-import { X, Plus, ZoomIn, Eye, EyeOff, Trash2, AlertTriangle } from 'lucide-react'
+import { X, Plus, ZoomIn, Eye, EyeOff, Trash2, AlertTriangle, CheckCircle2 } from 'lucide-react'
 import { IMaskInput } from 'react-imask'
 
 const formatPhoneInput = (value) => {
@@ -271,7 +271,7 @@ const pendingOrdersPhrase = (n) => {
 
 const ConfirmModal = ({ open, title, message, confirmLabel = 'Удалить', variant = 'danger', onConfirm, onCancel }) => {
   if (!open) return null
-  const Icon = variant === 'warning' ? AlertTriangle : Trash2
+  const Icon = variant === 'success' ? CheckCircle2 : variant === 'warning' ? AlertTriangle : Trash2
   return (
     <div className="admin-modal-overlay" onMouseDown={onCancel}>
       <div className="admin-confirm-modal" onMouseDown={e => e.stopPropagation()}>
@@ -305,6 +305,9 @@ const AdminPanel = () => {
 
   // Admin filter states
   const [categorySearch, setCategorySearch] = useState('')
+  const [catPhotoFilter, setCatPhotoFilter] = useState('')   // '', 'with', 'without'
+  const [catParentFilter, setCatParentFilter] = useState('') // '', 'root', 'child'
+  const [catSubtreeOf, setCatSubtreeOf] = useState('')       // id родителя или ''
   const [productsSearchInput, setProductsSearchInput] = useState('')
   const [productsSearch, setProductsSearch] = useState('')
   const [productsFilterDiscount, setProductsFilterDiscount] = useState(false)
@@ -422,6 +425,7 @@ const AdminPanel = () => {
   const [reviewDateTo, setReviewDateTo] = useState('')
   const [reviewViewModal, setReviewViewModal] = useState({ open: false, review: null })
   const [reviewDeleteModal, setReviewDeleteModal] = useState({ open: false, id: null })
+  const [reviewApproveModal, setReviewApproveModal] = useState({ open: false, id: null })
 
   // Slides state
   const [slidesData, setSlidesData] = useState({ data: [], total: 0 })
@@ -968,6 +972,12 @@ const AdminPanel = () => {
     }
   }
 
+  const confirmApproveReview = async () => {
+    const id = reviewApproveModal.id
+    setReviewApproveModal({ open: false, id: null })
+    if (id) await handleApproveReview(id)
+  }
+
   const confirmDeleteReviewUser = async () => {
     const { reviewId, userId } = reviewUserDeleteModal; if (!reviewId) return
     const res = await requestsService.deleteReviewUser(reviewId)
@@ -1117,9 +1127,43 @@ const AdminPanel = () => {
     })
   }
   const sortedCategories = getSortedCategories()
-  const filteredCategories = categorySearch.trim()
-    ? sortedCategories.filter(c => c.name.toLowerCase().includes(categorySearch.trim().toLowerCase()))
-    : sortedCategories
+
+  const catParentId = (c) => c.parent_id ?? c.parentId ?? null
+  const isPlaceholderIcon = (icon) => !icon || icon === '/dataImg/noimagebig.png'
+  // id всех категорий, у которых есть дети — для выпадающего «Подкатегории категории»
+  const parentCategoryIds = new Set((categories || []).map(c => catParentId(c)).filter(v => v != null))
+  // Собрать все id-потомки (рекурсивно) выбранной категории
+  const collectDescendantIds = (rootId) => {
+    const result = new Set()
+    let frontier = [Number(rootId)]
+    while (frontier.length) {
+      const next = []
+      for (const c of (categories || [])) {
+        const pid = catParentId(c)
+        if (pid != null && frontier.includes(pid) && !result.has(c.id)) {
+          result.add(c.id); next.push(c.id)
+        }
+      }
+      frontier = next
+    }
+    return result
+  }
+
+  const filteredCategories = (() => {
+    let list = sortedCategories
+    const q = categorySearch.trim().toLowerCase()
+    if (q) list = list.filter(c => c.name.toLowerCase().includes(q))
+    if (catPhotoFilter === 'with') list = list.filter(c => !isPlaceholderIcon(c.icon))
+    else if (catPhotoFilter === 'without') list = list.filter(c => isPlaceholderIcon(c.icon))
+    if (catParentFilter === 'root') list = list.filter(c => catParentId(c) == null)
+    else if (catParentFilter === 'child') list = list.filter(c => catParentId(c) != null)
+    if (catSubtreeOf) {
+      const subtree = collectDescendantIds(catSubtreeOf)
+      list = list.filter(c => subtree.has(c.id))
+    }
+    return list
+  })()
+  const catFiltersActive = !!(categorySearch || catPhotoFilter || catParentFilter || catSubtreeOf)
 
   return (
     <div className="admin-panel">
@@ -1584,8 +1628,27 @@ const AdminPanel = () => {
             <div className="admin-categories">
               <h2>Управление категориями</h2>
               <div style={{ marginBottom: 12 }}><button className="btn btn--confirm" onClick={() => setCategoryAddModal(true)}>Добавить категорию</button></div>
-              <div style={{ marginBottom: 12 }}>
-                <input className="admin-edit-input" placeholder="Поиск по названию..." value={categorySearch} onChange={e => { setCategorySearch(e.target.value); setCategoriesPage(1) }} style={{ maxWidth: 320 }} />
+              <div className="admin-filters">
+                <input className="admin-edit-input admin-filters__grow" placeholder="Поиск по названию..." value={categorySearch} onChange={e => { setCategorySearch(e.target.value); setCategoriesPage(1) }} />
+                <select className="admin-edit-input" value={catPhotoFilter} onChange={e => { setCatPhotoFilter(e.target.value); setCategoriesPage(1) }}>
+                  <option value="">— Фото: все —</option>
+                  <option value="with">С фото</option>
+                  <option value="without">Без фото</option>
+                </select>
+                <select className="admin-edit-input" value={catParentFilter} onChange={e => { setCatParentFilter(e.target.value); setCategoriesPage(1) }}>
+                  <option value="">— Уровень: все —</option>
+                  <option value="root">Только родительские</option>
+                  <option value="child">Только дочерние</option>
+                </select>
+                <select className="admin-edit-input" value={catSubtreeOf} onChange={e => { setCatSubtreeOf(e.target.value); setCategoriesPage(1) }}>
+                  <option value="">— Подкатегории категории —</option>
+                  {categories.filter(c => parentCategoryIds.has(c.id)).map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+                {catFiltersActive && (
+                  <button className="btn btn--cancel" onClick={() => { setCategorySearch(''); setCatPhotoFilter(''); setCatParentFilter(''); setCatSubtreeOf(''); setCategoriesPage(1) }}>Сбросить</button>
+                )}
               </div>
               <div className="admin-users-table admin-categories-table">
                 <table>
@@ -2052,6 +2115,7 @@ const AdminPanel = () => {
                         </td>
                         <td className="admin__btns">
                           <button className="btn btn--two" onClick={() => setReviewViewModal({ open: true, review: r })}>Просмотр</button>
+                          {isAdmin && r.status === 'pending' && <button className="btn btn--confirm" onClick={() => setReviewApproveModal({ open: true, id: r.id })}>Одобрить</button>}
                           {isAdmin && <button className="btn btn--danger" onClick={() => setReviewDeleteModal({ open: true, id: r.id })}>Удалить</button>}
                         </td>
                       </tr>
@@ -2142,7 +2206,7 @@ const AdminPanel = () => {
                         <div className="admin-review-modal__footer-right">
                           <button className="admin-review-modal__btn admin-review-modal__btn--ghost" onClick={() => setReviewViewModal({ open: false, review: null })}>Закрыть</button>
                           {r.status === 'pending' && isAdmin && (
-                            <button className="admin-review-modal__btn admin-review-modal__btn--approve" onClick={() => handleApproveReview(r.id)}>✓ Одобрить</button>
+                            <button className="admin-review-modal__btn admin-review-modal__btn--approve" onClick={() => setReviewApproveModal({ open: true, id: r.id })}>✓ Одобрить</button>
                           )}
                         </div>
                       </div>
@@ -2153,6 +2217,7 @@ const AdminPanel = () => {
 
               {reviewLightboxUrl && <ImagePreviewLightbox url={reviewLightboxUrl} onClose={() => setReviewLightboxUrl(null)} />}
 
+              {isAdmin && <ConfirmModal open={reviewApproveModal.open} variant="success" title={`Одобрить отзыв #${reviewApproveModal.id}?`} message="Отзыв будет опубликован и начнёт учитываться в рейтинге товара." confirmLabel="Одобрить" onConfirm={confirmApproveReview} onCancel={() => setReviewApproveModal({ open: false, id: null })} />}
               {isAdmin && <ConfirmModal open={reviewDeleteModal.open} title={`Удалить отзыв #${reviewDeleteModal.id}?`} message="Отзыв будет удалён без возможности восстановления." confirmLabel="Удалить отзыв" onConfirm={confirmDeleteReview} onCancel={() => setReviewDeleteModal({ open: false, id: null })} />}
               {isAdmin && <ConfirmModal open={reviewUserDeleteModal.open} title={`Удалить пользователя #${reviewUserDeleteModal.userId}?`} message="Пользователь и все его отзывы будут удалены навсегда. Это действие нельзя отменить." confirmLabel="Удалить пользователя" onConfirm={confirmDeleteReviewUser} onCancel={() => setReviewUserDeleteModal({ open: false, reviewId: null, userId: null })} />}
             </div>
@@ -2277,16 +2342,25 @@ const AdminPanel = () => {
               {/* Selection section */}
               <div className="admin-stats__select-section">
                 <div className="admin-stats__mode-toggle">
-                  {['category', 'product'].map((m) => (
+                  {['all', 'category', 'product'].map((m) => (
                     <button
                       key={m}
                       className={`admin-stats__mode-btn ${statsMode === m ? 'admin-stats__mode-btn--active' : ''}`}
                       onClick={() => { setStatsMode(m); setStatsTarget(null); setStatsSelectedProduct(null); setStatsProductQuery(''); setStatsProductResults([]) }}
                     >
-                      {m === 'category' ? 'По категории' : 'По товару'}
+                      {m === 'all' ? 'По всем товарам' : m === 'category' ? 'По категории' : 'По товару'}
                     </button>
                   ))}
                 </div>
+
+                {statsMode === 'all' && (
+                  <div className="admin-stats__row">
+                    <span className="admin-stats__hint">Сводная статистика продаж по всему ассортименту магазина.</span>
+                    <button className="btn btn--confirm" onClick={() => setStatsTarget({ type: 'all', id: 0, name: 'Все товары' })}>
+                      Посмотреть статистику
+                    </button>
+                  </div>
+                )}
 
                 {statsMode === 'category' && (
                   <div className="admin-stats__row">
@@ -2352,7 +2426,9 @@ const AdminPanel = () => {
               {statsTarget && (
                 <div className="admin-stats__chart-section">
                   <div className="admin-stats__chart-heading">
-                    {statsTarget.type === 'category' ? 'Категория' : 'Товар'}: <strong>{statsTarget.name}</strong>
+                    {statsTarget.type === 'all'
+                      ? <strong>{statsTarget.name}</strong>
+                      : <>{statsTarget.type === 'category' ? 'Категория' : 'Товар'}: <strong>{statsTarget.name}</strong></>}
                   </div>
 
                   <div className="admin-stats__controls">
