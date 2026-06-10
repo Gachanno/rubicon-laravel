@@ -73,12 +73,13 @@
   align-items: center;
 }
 .cart-img {
-  width: 90px;
-  height: 90px;
+  width: 190px;
+  height: 150px;
   object-fit: contain;
   border-radius: 8px;
   margin-right: 18px;
   background: #f7f7f7;
+  flex-shrink: 0;
 }
 .cart-details {
   display: flex;
@@ -110,6 +111,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-shrink: 0;
 }
 .cart__quantity {
   display: flex;
@@ -175,7 +177,42 @@
   line-height: 1.5;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
+  .cart-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    align-items: center;
+    justify-items: center; // центрируем содержимое ячеек
+  }
+
+  .cart__quantity {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    justify-self: center;
+  }
+
+  .cart-actions .btn--remove,
+  .cart-actions .btn--confirm {
+    width: 130px;          // фиксированная ширина кнопок
+    text-align: center;
+    box-sizing: border-box;
+  }
+
+  .cart-actions .btn--remove {
+    grid-column: 1;
+    grid-row: 2;
+    justify-self: end;     // прижать к правому краю левой ячейки (опционально)
+  }
+
+  .cart-actions .btn--confirm {
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: start;   // прижать к левому краю правой ячейки
+  }
+}
+
+@media (max-width: 768px) {
   .cart-page {
     padding: 24px 12px;
   }
@@ -202,14 +239,15 @@
   }
 
   .cart-img {
-    width: 72px;
-    height: 72px;
-    margin-right: 12px;
+    width: 150px;
+    height: 150px;
+    margin-right: 14px;
   }
 
   .cart-actions {
     width: 100%;
     flex-wrap: wrap;
+
     gap: 8px;
   }
 
@@ -229,6 +267,11 @@
     font-size: 1.5rem;
   }
 
+  .cart-img {
+    width: 130px;
+    height: 130px;
+  }
+
   .cart-toast {
     width: calc(100vw - 24px);
     max-width: 360px;
@@ -236,6 +279,17 @@
     padding: 10px 14px;
     text-align: center;
   }
+}
+
+@media (max-width: 425px) {
+  .cart-img {
+    width: 120px;
+    height: 120px;
+    margin-right: 14px;
+  }
+
+  // Остальные стили для очень узких экранов (размеры фото, шрифты и пр.)
+  // Сетка для .cart-actions уже задана выше для всех экранов ≤1024px
 }
 
 @keyframes cart-toast-in {
