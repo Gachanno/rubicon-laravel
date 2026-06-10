@@ -4,12 +4,20 @@
     "src": "resources/js/Pages/img/about.jpg"
   },
   "resources/js/app.jsx": {
+<<<<<<< HEAD
     "file": "assets/app-BUbh0Fd7.js",
+=======
+    "file": "assets/app-BEqk7ZIj.js",
+>>>>>>> 687dcc09355203c1b7e8be81b6b662bcc17fccb6
     "name": "app",
     "src": "resources/js/app.jsx",
     "isEntry": true,
     "css": [
+<<<<<<< HEAD
       "assets/app-CrlvsiQd.css"
+=======
+      "assets/app-u_gcetgB.css"
+>>>>>>> 687dcc09355203c1b7e8be81b6b662bcc17fccb6
     ],
     "assets": [
       "assets/about-DrvL78sr.jpg",
