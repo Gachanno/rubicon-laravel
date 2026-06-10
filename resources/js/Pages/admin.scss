@@ -2216,6 +2216,15 @@
     transform: translateY(-1px);
   }
 
+  &--active {
+    background: #f39c12;
+    border-color: #f39c12;
+    color: #fff;
+
+    &:hover { background: #e08e0b; border-color: #e08e0b; }
+    .admin-orders-pending__dot { background: #fff; box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.35); }
+  }
+
   &__dot {
     width: 9px;
     height: 9px;

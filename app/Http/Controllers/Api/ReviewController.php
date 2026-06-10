@@ -154,19 +154,28 @@ class ReviewController extends Controller
 
         if ($q = $request->input('q')) {
             $query->where(function ($qb) use ($q) {
+                $nameSearch = fn($u) => $u->where('last_name', 'like', "%{$q}%")
+                    ->orWhere('first_name', 'like', "%{$q}%")
+                    ->orWhere('middle_name', 'like', "%{$q}%");
+                // Поиск автора: по ID пользователя или по имени
                 if (is_numeric($q)) {
-                    $qb->where('reviews.id', (int) $q)
-                       ->orWhereHas('user', fn($u) => $u->where('last_name', 'like', "%{$q}%")
-                           ->orWhere('first_name', 'like', "%{$q}%"));
+                    $qb->where('reviews.user_id', (int) $q)->orWhereHas('user', $nameSearch);
                 } else {
-                    $qb->whereHas('user', fn($u) => $u->where('last_name', 'like', "%{$q}%")
-                        ->orWhere('first_name', 'like', "%{$q}%"));
+                    $qb->whereHas('user', $nameSearch);
                 }
             });
         }
 
         if ($product = $request->input('product')) {
-            $query->whereHas('product', fn($p) => $p->where('name', 'like', "%{$product}%"));
+            // Поиск товара: по ID или по названию
+            if (is_numeric($product)) {
+                $query->where(function ($qb) use ($product) {
+                    $qb->where('reviews.product_id', (int) $product)
+                       ->orWhereHas('product', fn($p) => $p->where('name', 'like', "%{$product}%"));
+                });
+            } else {
+                $query->whereHas('product', fn($p) => $p->where('name', 'like', "%{$product}%"));
+            }
         }
 
         if ($from = $request->input('from')) {

@@ -37,7 +37,10 @@ class OrderController extends Controller
                     ->orWhere('last_name', 'like', "%{$q}%")
                     ->orWhere('middle_name', 'like', "%{$q}%");
                 if (is_numeric($q)) {
-                    $qb->where('orders.id', (int) $q)->orWhereHas('user', $nameSearch);
+                    // Число ищем и по номеру заказа, и по ID покупателя
+                    $qb->where('orders.id', (int) $q)
+                       ->orWhere('orders.user_id', (int) $q)
+                       ->orWhereHas('user', $nameSearch);
                 } else {
                     $qb->whereHas('user', $nameSearch);
                 }

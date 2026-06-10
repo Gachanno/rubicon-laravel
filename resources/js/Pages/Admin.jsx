@@ -301,6 +301,7 @@ const AdminPanel = () => {
   const dispatch = useAppDispatch()
   const [ordersPageData, setOrdersPageData] = useState({ data: [], total: 0 })
   const [ordersPending, setOrdersPending] = useState(0)
+  const [ordersReload, setOrdersReload] = useState(0)
   const [activeTab, setActiveTab] = useState(isAdmin ? 'users' : 'products')
 
   // Admin filter states
@@ -342,7 +343,7 @@ const AdminPanel = () => {
     }
     fetchOrders()
     return () => { mounted = false }
-  }, [activeTab, ordersState.page, ordersState.limit, ordersState.sortBy, ordersState.sortDir, ordersSearch, ordersStatus, ordersDelivery, ordersDateFrom, ordersDateTo, dispatch])
+  }, [activeTab, ordersState.page, ordersState.limit, ordersState.sortBy, ordersState.sortDir, ordersSearch, ordersStatus, ordersDelivery, ordersDateFrom, ordersDateTo, ordersReload, dispatch])
 
   const [users, setUsers] = useState([])
   const [usersPage, setUsersPage] = useState(1)
@@ -413,6 +414,7 @@ const AdminPanel = () => {
   const [availableEditTemplates, setAvailableEditTemplates] = useState([])
 
   // Reviews state
+  const [reviewsReload, setReviewsReload] = useState(0)
   const [reviewsData, setReviewsData] = useState({ data: [], total: 0 })
   const [reviewsPage, setReviewsPage] = useState(1)
   const [reviewsLimit, setReviewsLimit] = useState(10)
@@ -429,6 +431,7 @@ const AdminPanel = () => {
   const [reviewApproveModal, setReviewApproveModal] = useState({ open: false, id: null })
 
   // Slides state
+  const [slidesReload, setSlidesReload] = useState(0)
   const [slidesData, setSlidesData] = useState({ data: [], total: 0 })
   const [slidesPage, setSlidesPage] = useState(1)
   const [slidesLimit, setSlidesLimit] = useState(10)
@@ -604,7 +607,7 @@ const AdminPanel = () => {
     }
     load()
     return () => { mounted = false }
-  }, [activeTab, reviewsPage, reviewsLimit, reviewsSortBy, reviewsSortDir, reviewSearch, reviewProductSearch, reviewDateFrom, reviewDateTo, reviewRating, reviewHasPhoto, reviewStatusFilter])
+  }, [activeTab, reviewsPage, reviewsLimit, reviewsSortBy, reviewsSortDir, reviewSearch, reviewProductSearch, reviewDateFrom, reviewDateTo, reviewRating, reviewHasPhoto, reviewStatusFilter, reviewsReload])
 
   useEffect(() => {
     if (activeTab !== 'slides') return
@@ -619,7 +622,7 @@ const AdminPanel = () => {
     }
     load()
     return () => { mounted = false }
-  }, [activeTab, slidesPage, slidesLimit, slidesSortBy, slidesSortDir, slideSearch])
+  }, [activeTab, slidesPage, slidesLimit, slidesSortBy, slidesSortDir, slideSearch, slidesReload])
 
   useEffect(() => {
     if (activeTab !== 'stats' || !statsTarget) return
@@ -925,6 +928,7 @@ const AdminPanel = () => {
     const id = productDeleteModal.id; if (!id) return
     try { const res = await requestsService.deleteProduct(id); setProductsPageData(prev => ({ ...prev, data: prev.data.filter(p => p.id !== id), total: Math.max(0, (prev.total || 1) - 1) })); setToast({ show: true, message: `Товар ${id} удалён` }) }
     catch { setProductsPageData(prev => ({ ...prev, data: prev.data.filter(p => p.id !== id) })); setToast({ show: true, message: `Товар ${id} удалён` }) }
+    setProductsRefresh(n => n + 1) // перезагрузка с текущими фильтрами
     closeProductDelete(); setTimeout(() => setToast({ show: false, message: '' }), 3000)
   }
   const startCategoryEdit = (cat) => { setEditingCategoryId(cat.id); setCategoryEditForm({ name: cat.name || '', description: cat.description || '', parentId: cat.parent_id ?? cat.parentId ?? '', imageFile: null, imagePreview: cat.icon || '' }); setCategoryEditErrors({}) }
@@ -981,6 +985,9 @@ const AdminPanel = () => {
     } catch {
       setOrdersPageData(prev => ({ ...prev, data: prev.data.map(it => it.id === id ? ({ ...it, ...payload }) : it) }))
     }
+    // Перезагрузка с текущими фильтрами: заказ, не подходящий под фильтр, исчезает;
+    // обновляется счётчик «необработанных» в сайдбаре.
+    setOrdersReload(n => n + 1)
     setToast({ show: true, message: msg || `Заказ ${id} обновлён` }); setTimeout(() => setToast({ show: false, message: '' }), 3000)
   }
   const askStatusChange = (id, newStatus, payload = null) => setStatusChangeModal({ open: true, id, newStatus, payload })
@@ -1012,6 +1019,7 @@ const AdminPanel = () => {
     if (res?.success) {
       setReviewsData(prev => ({ ...prev, data: prev.data.filter(r => r.id !== id), total: Math.max(0, prev.total - 1) }))
       setReviewViewModal({ open: false, review: null })
+      setReviewsReload(n => n + 1) // перезагрузка с текущими фильтрами
       setToast({ show: true, message: `Отзыв ${id} удалён` }); setTimeout(() => setToast({ show: false, message: '' }), 3000)
     }
     setReviewDeleteModal({ open: false, id: null })
@@ -1023,6 +1031,7 @@ const AdminPanel = () => {
       setReviewsData(prev => ({ ...prev, data: prev.data.map(r => r.id === id ? { ...r, status: 'approved' } : r) }))
       setReviewViewModal(prev => prev.review?.id === id ? { ...prev, review: { ...prev.review, status: 'approved' } } : prev)
       setReviewPendingCount(c => Math.max(0, c - 1))
+      setReviewsReload(n => n + 1) // перезагрузка с текущими фильтрами (одобренный уйдёт из «Новые»)
       setToast({ show: true, message: `Отзыв ${id} одобрен` }); setTimeout(() => setToast({ show: false, message: '' }), 3000)
     }
   }
@@ -1035,11 +1044,12 @@ const AdminPanel = () => {
 
   const confirmDeleteReviewUser = async () => {
     const { reviewId, userId } = reviewUserDeleteModal; if (!reviewId) return
-    const res = await requestsService.deleteReviewUser(reviewId)
+    const res = await requestsService.deleteReviewUser(userId)
     if (res?.success) {
       setReviewsData(prev => ({ ...prev, data: prev.data.filter(r => r.userId !== userId), total: Math.max(0, prev.total - 1) }))
       setReviewViewModal({ open: false, review: null })
       setUsers(prev => prev.filter(u => u.id !== userId))
+      setReviewsReload(n => n + 1) // перезагрузка с текущими фильтрами
       setToast({ show: true, message: `Пользователь и его отзывы удалены` }); setTimeout(() => setToast({ show: false, message: '' }), 3000)
     }
     setReviewUserDeleteModal({ open: false, reviewId: null, userId: null })
@@ -1106,6 +1116,7 @@ const AdminPanel = () => {
     const res = await requestsService.deleteSlide(id)
     if (res?.success) {
       setSlidesData(prev => ({ ...prev, data: prev.data.filter(s => s.id !== id), total: Math.max(0, prev.total - 1) }))
+      setSlidesReload(n => n + 1) // перезагрузка таблицы (дозаполнит страницу)
       setToast({ show: true, message: `Слайд ${id} удалён` })
       setTimeout(() => setToast({ show: false, message: '' }), 3000)
     }
@@ -1804,18 +1815,24 @@ const AdminPanel = () => {
               {ordersPending > 0 && (
                 <button
                   type="button"
-                  className="admin-orders-pending"
+                  className={`admin-orders-pending${ordersStatus === 'в ожидании' ? ' admin-orders-pending--active' : ''}`}
                   onClick={() => {
-                    setOrdersSearch(''); setOrdersSearchInput('')
-                    setOrdersDelivery(''); setOrdersDateFrom(''); setOrdersDateTo('')
-                    setOrdersStatus('в ожидании')
-                    dispatch(setSortExplicit({ sortBy: 'createdAt', sortDir: 'asc' }))
-                    dispatch(setPage(1))
+                    if (ordersStatus === 'в ожидании') {
+                      // Повторное нажатие — снять фильтр «новые»
+                      setOrdersStatus('')
+                      dispatch(setPage(1))
+                    } else {
+                      setOrdersSearch(''); setOrdersSearchInput('')
+                      setOrdersDelivery(''); setOrdersDateFrom(''); setOrdersDateTo('')
+                      setOrdersStatus('в ожидании')
+                      dispatch(setSortExplicit({ sortBy: 'createdAt', sortDir: 'asc' }))
+                      dispatch(setPage(1))
+                    }
                   }}
-                  title="Показать необработанные заказы (от старых к новым)"
+                  title={ordersStatus === 'в ожидании' ? 'Нажмите, чтобы снять фильтр' : 'Показать необработанные заказы (от старых к новым)'}
                 >
                   <span className="admin-orders-pending__dot" />
-                  {pendingOrdersPhrase(ordersPending)} — нажмите, чтобы обработать
+                  {pendingOrdersPhrase(ordersPending)} — {ordersStatus === 'в ожидании' ? 'нажмите, чтобы снять фильтр' : 'нажмите, чтобы обработать'}
                 </button>
               )}
               <div className="admin-reviews-filters">
