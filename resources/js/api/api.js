@@ -182,6 +182,33 @@ class Requests {
         }
     }
 
+    async getPaymentCards() {
+        try {
+            const { data } = await axios.get(this.URL + '/payment-cards')
+            return Array.isArray(data) ? data : []
+        } catch {
+            return []
+        }
+    }
+
+    async savePaymentCard(body) {
+        try {
+            const { data } = await axios.post(this.URL + '/payment-cards', body)
+            return data
+        } catch (err) {
+            return { success: false, error: err }
+        }
+    }
+
+    async deletePaymentCard(id) {
+        try {
+            const { data } = await axios.delete(this.URL + `/payment-cards/${id}`)
+            return data
+        } catch (err) {
+            return { success: false, error: err }
+        }
+    }
+
     async updateOrder(id, updates) {
         try {
             const { data } = await axios.patch(this.URL + `/orders/${id}`, updates)

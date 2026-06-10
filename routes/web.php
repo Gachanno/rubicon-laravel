@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\CharacteristicTemplateController;
 use App\Http\Controllers\Api\SlideController;
 use App\Http\Controllers\Api\StatisticsController;
 use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\PaymentCardController;
 
 Route::get('/', [PageController::class, 'main'])->name('home');
 Route::get('/catalog/{categoryId?}', [PageController::class, 'catalog'])->name('catalog');
@@ -86,6 +87,11 @@ Route::prefix('api')->group(function () {
 
     // Order status notifications
     Route::get('/notifications', [NotificationController::class, 'index'])->middleware('auth');
+
+    // Сохранённые банковские карты (хранятся в БД зашифрованными)
+    Route::get('/payment-cards', [PaymentCardController::class, 'index'])->middleware('auth');
+    Route::post('/payment-cards', [PaymentCardController::class, 'store'])->middleware('auth');
+    Route::delete('/payment-cards/{id}', [PaymentCardController::class, 'destroy'])->middleware('auth');
 
     // Slides
     Route::get('/slides', [SlideController::class, 'publicIndex']);

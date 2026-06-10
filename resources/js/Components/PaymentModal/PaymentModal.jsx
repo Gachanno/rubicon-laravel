@@ -1,13 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { X, Plus } from 'lucide-react'
+import { requestsService } from '../../api/api'
 import './PaymentModal.scss'
-
-const STORAGE_KEY = 'paymentCards'
-
-function loadCards() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]') } catch { return [] }
-}
-function persistCards(cards) { localStorage.setItem(STORAGE_KEY, JSON.stringify(cards)) }
 
 function formatCardNumber(value) {
   return value.replace(/\D/g, '').slice(0, 16).replace(/(.{4})(?=.)/g, '$1 ')
@@ -47,39 +41,37 @@ const PaymentModal = ({ open, onConfirm, onCancel, onBack, title = 'Оплата
   const [saveCard, setSaveCard] = useState(false)
   const [errors, setErrors] = useState({})
   const [paying, setPaying] = useState(false)
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    if (open) {
-      const loaded = loadCards()
-      setCards(loaded)
-      setSelectedId(null)
-      setShowForm(loaded.length === 0)
-      setNumber(''); setExpiry(''); setCvv('')
-      setSaveCard(false); setErrors({})
-    }
+    if (!open) return
+    // Чистим устаревшие карты прежней реализации (localStorage)
+    try { Object.keys(localStorage).filter(k => k.startsWith('paymentCards')).forEach(k => localStorage.removeItem(k)) } catch {}
+    setSelectedId(null); setNumber(''); setExpiry(''); setCvv(''); setSaveCard(false); setErrors({})
+    setLoading(true)
+    requestsService.getPaymentCards()
+      .then(list => { setCards(list); setShowForm(list.length === 0) })
+      .finally(() => setLoading(false))
   }, [open])
 
   if (!open) return null
 
   const selectCard = (card) => {
     setSelectedId(card.id)
-    setShowForm(true)
-    setNumber(formatCardNumber(card.number))
-    setExpiry(card.expiry)
-    setCvv('')
-    setSaveCard(false)
+    setShowForm(false)
     setErrors({})
   }
 
-  const removeCard = (e, id) => {
+  const removeCard = async (e, id) => {
     e.stopPropagation()
-    const updated = cards.filter(c => c.id !== id)
-    setCards(updated)
-    persistCards(updated)
-    if (selectedId === id) {
-      setSelectedId(null)
-      setShowForm(updated.length === 0)
-      setNumber(''); setExpiry(''); setCvv('')
+    const res = await requestsService.deletePaymentCard(id)
+    if (res?.success !== false) {
+      const updated = cards.filter(c => c.id !== id)
+      setCards(updated)
+      if (selectedId === id) {
+        setSelectedId(null)
+        setShowForm(updated.length === 0)
+      }
     }
   }
 
@@ -91,13 +83,11 @@ const PaymentModal = ({ open, onConfirm, onCancel, onBack, title = 'Оплата
   }
 
   const handleNumberChange = (e) => {
-    if (selectedId) return
     setNumber(formatCardNumber(e.target.value))
     setErrors(p => ({ ...p, number: undefined }))
   }
 
   const handleExpiryChange = (e) => {
-    if (selectedId) return
     setExpiry(formatExpiry(e.target.value))
     setErrors(p => ({ ...p, expiry: undefined }))
   }
@@ -108,22 +98,36 @@ const PaymentModal = ({ open, onConfirm, onCancel, onBack, title = 'Оплата
   }
 
   const handlePay = async () => {
+    // Оплата сохранённой картой — имитация (полный номер на клиент не приходит)
+    if (selectedId) {
+      setPaying(true)
+      await new Promise(r => setTimeout(r, 500))
+      setPaying(false)
+      onConfirm()
+      return
+    }
+
+    // Новая карта
     const errs = validateCard(number, expiry, cvv)
     if (Object.keys(errs).length) { setErrors(errs); return }
 
-    if (!selectedId && saveCard) {
-      const digits = number.replace(/\s/g, '')
-      const card = { id: Date.now().toString(), number: digits, expiry, last4: digits.slice(-4) }
-      const updated = [...cards, card]
-      setCards(updated)
-      persistCards(updated)
+    setPaying(true)
+    if (saveCard) {
+      const res = await requestsService.savePaymentCard({ number: number.replace(/\s/g, ''), expiry })
+      if (res?.success === false) {
+        setPaying(false)
+        const data = res.error?.response?.data
+        if (data && typeof data === 'object') setErrors(data)
+        return
+      }
     }
 
-    setPaying(true)
     await new Promise(r => setTimeout(r, 500))
     setPaying(false)
     onConfirm()
   }
+
+  const canPay = !!selectedId || showForm
 
   return (
     <div className="payment-modal__overlay" onMouseDown={onCancel}>
@@ -135,82 +139,84 @@ const PaymentModal = ({ open, onConfirm, onCancel, onBack, title = 'Оплата
           </button>
         </div>
 
-        {cards.length > 0 && (
-          <div className="payment-modal__cards">
-            <div className="payment-modal__cards-label">Сохранённые карты</div>
-            {cards.map(card => (
-              <div
-                key={card.id}
-                className={`payment-card${selectedId === card.id ? ' payment-card--active' : ''}`}
-                onClick={() => selectCard(card)}
-              >
-                  <div className="payment-card__info">
-                  <span className="payment-card__number">**** **** **** {card.last4}</span>
-                  <span className="payment-card__expiry">{card.expiry}</span>
-                </div>
-                <button className="payment-card__delete" onClick={e => removeCard(e, card.id)} title="Удалить" aria-label="Удалить карту">
-                  <X size={16} strokeWidth={2.2} />
-                </button>
+        {loading ? (
+          <div className="payment-modal__loading">Загрузка карт...</div>
+        ) : (
+          <>
+            {cards.length > 0 && (
+              <div className="payment-modal__cards">
+                <div className="payment-modal__cards-label">Сохранённые карты</div>
+                {cards.map(card => (
+                  <div
+                    key={card.id}
+                    className={`payment-card${selectedId === card.id ? ' payment-card--active' : ''}`}
+                    onClick={() => selectCard(card)}
+                  >
+                    <div className="payment-card__info">
+                      <span className="payment-card__number">**** **** **** {card.last4}</span>
+                      <span className="payment-card__expiry">{card.expiry}</span>
+                    </div>
+                    <button className="payment-card__delete" onClick={e => removeCard(e, card.id)} title="Удалить" aria-label="Удалить карту">
+                      <X size={16} strokeWidth={2.2} />
+                    </button>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        )}
-
-        <button className="payment-modal__add-btn" onClick={startNewCard}>
-          <Plus size={16} strokeWidth={2.2} />
-          <span>Добавить карту</span>
-        </button>
-
-        {showForm && (
-          <div className="payment-modal__form">
-            <div className="payment-modal__field">
-              <label className="payment-modal__label">Номер карты</label>
-              <input
-                className={`payment-modal__input${errors.number ? ' payment-modal__input--error' : ''}`}
-                type="text"
-                placeholder="0000 0000 0000 0000"
-                value={number}
-                onChange={handleNumberChange}
-                maxLength={19}
-                readOnly={!!selectedId}
-              />
-              {errors.number && <span className="payment-modal__error">{errors.number}</span>}
-            </div>
-            <div className="payment-modal__row">
-              <div className="payment-modal__field">
-                <label className="payment-modal__label">Срок действия</label>
-                <input
-                  className={`payment-modal__input${errors.expiry ? ' payment-modal__input--error' : ''}`}
-                  type="text"
-                  placeholder="ММ/ГГ"
-                  value={expiry}
-                  onChange={handleExpiryChange}
-                  maxLength={5}
-                  readOnly={!!selectedId}
-                />
-                {errors.expiry && <span className="payment-modal__error">{errors.expiry}</span>}
-              </div>
-              <div className="payment-modal__field">
-                <label className="payment-modal__label">CVV/CVC</label>
-                <input
-                  className={`payment-modal__input${errors.cvv ? ' payment-modal__input--error' : ''}`}
-                  type="password"
-                  placeholder="•••"
-                  value={cvv}
-                  onChange={handleCvvChange}
-                  maxLength={4}
-                />
-                {errors.cvv && <span className="payment-modal__error">{errors.cvv}</span>}
-              </div>
-            </div>
-            {!selectedId && (
-              <label className="filter-check-label">
-                <input type="checkbox" className="filter-check-input" checked={saveCard} onChange={e => setSaveCard(e.target.checked)} />
-                <span className="filter-check-box" />
-                Сохранить карту
-              </label>
             )}
-          </div>
+
+            <button className="payment-modal__add-btn" onClick={startNewCard}>
+              <Plus size={16} strokeWidth={2.2} />
+              <span>Добавить карту</span>
+            </button>
+
+            {showForm && (
+              <div className="payment-modal__form">
+                <div className="payment-modal__field">
+                  <label className="payment-modal__label">Номер карты</label>
+                  <input
+                    className={`payment-modal__input${errors.number ? ' payment-modal__input--error' : ''}`}
+                    type="text"
+                    placeholder="0000 0000 0000 0000"
+                    value={number}
+                    onChange={handleNumberChange}
+                    maxLength={19}
+                  />
+                  {errors.number && <span className="payment-modal__error">{errors.number}</span>}
+                </div>
+                <div className="payment-modal__row">
+                  <div className="payment-modal__field">
+                    <label className="payment-modal__label">Срок действия</label>
+                    <input
+                      className={`payment-modal__input${errors.expiry ? ' payment-modal__input--error' : ''}`}
+                      type="text"
+                      placeholder="ММ/ГГ"
+                      value={expiry}
+                      onChange={handleExpiryChange}
+                      maxLength={5}
+                    />
+                    {errors.expiry && <span className="payment-modal__error">{errors.expiry}</span>}
+                  </div>
+                  <div className="payment-modal__field">
+                    <label className="payment-modal__label">CVV/CVC</label>
+                    <input
+                      className={`payment-modal__input${errors.cvv ? ' payment-modal__input--error' : ''}`}
+                      type="password"
+                      placeholder="•••"
+                      value={cvv}
+                      onChange={handleCvvChange}
+                      maxLength={4}
+                    />
+                    {errors.cvv && <span className="payment-modal__error">{errors.cvv}</span>}
+                  </div>
+                </div>
+                <label className="filter-check-label">
+                  <input type="checkbox" className="filter-check-input" checked={saveCard} onChange={e => setSaveCard(e.target.checked)} />
+                  <span className="filter-check-box" />
+                  Сохранить карту
+                </label>
+              </div>
+            )}
+          </>
         )}
 
         <div className="payment-modal__actions">
@@ -221,7 +227,7 @@ const PaymentModal = ({ open, onConfirm, onCancel, onBack, title = 'Оплата
           <button
             className="payment-modal__btn payment-modal__btn--pay"
             onClick={handlePay}
-            disabled={!showForm || paying}
+            disabled={!canPay || paying}
           >
             {paying ? 'Обработка...' : 'Оплатить'}
           </button>
