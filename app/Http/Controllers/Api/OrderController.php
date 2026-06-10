@@ -7,6 +7,8 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+
 class OrderController extends Controller
 {
     private function fullName($user): string
@@ -235,13 +237,28 @@ class OrderController extends Controller
 
         $order->save();
 
-        // Notify the order owner when the status actually changes
-        if ($order->user_id && $order->status !== $oldStatus) {
-            \App\Models\OrderNotification::create([
-                'user_id'  => $order->user_id,
-                'order_id' => $order->id,
-                'status'   => $order->status,
-            ]);
+        // Возврат / повторное списание остатков при переключении «отменено»
+        if ($order->status !== $oldStatus) {
+            $wasCancelled = $oldStatus === 'отменено';
+            $nowCancelled = $order->status === 'отменено';
+
+            if ($wasCancelled !== $nowCancelled) {
+                // отмена → вернуть товары на склад; снятие отмены → снова списать
+                $sign = $nowCancelled ? '+' : '-';
+                foreach ($order->items()->get() as $it) {
+                    Product::where('id', $it->product_id)
+                        ->update(['available_quantity' => DB::raw("available_quantity {$sign} {$it->quantity}")]);
+                }
+            }
+
+            // Уведомление владельцу о смене статуса
+            if ($order->user_id) {
+                \App\Models\OrderNotification::create([
+                    'user_id'  => $order->user_id,
+                    'order_id' => $order->id,
+                    'status'   => $order->status,
+                ]);
+            }
         }
 
         $order->load(['items.product', 'user']);

@@ -137,6 +137,9 @@ class CategoryController extends Controller
             Category::whereIn('id', $subtreeIds)->delete();
         });
 
+        // Заказы, оставшиеся без товаров после удаления, переводятся в «отменено»
+        \App\Models\Order::cancelEmptyOrders();
+
         return response()->json(['success' => true]);
     }
 

@@ -317,6 +317,8 @@ class ProductController extends Controller
     public function destroy(int $id)
     {
         Product::findOrFail($id)->delete();
+        // Заказы, оставшиеся без товаров, переводятся в «отменено»
+        \App\Models\Order::cancelEmptyOrders();
         return response()->json(['success' => true]);
     }
 }

@@ -7,6 +7,8 @@ import { useAppDispatch } from '../store/hooks'
 import { setPage, setSort, setTotal, setSortExplicit, setLimit } from '../store/ordersSlice'
 import { EyeOpenIcon, EyeClosedIcon } from '../Components/auth/PasswordToggleIcon'
 import { IMaskInput } from 'react-imask'
+import { AlertTriangle } from 'lucide-react'
+import ModalConfirm from '../Components/ModalConfirm'
 import axios from 'axios'
 
 const carrierLabel = (carrier) =>
@@ -194,8 +196,11 @@ const Profile = () => {
     else if (form.firstName.trim().length < 2) newErrors.firstName = 'Имя должно быть минимум 2 символа'
     if (!form.lastName.trim()) newErrors.lastName = 'Введите фамилию'
     else if (form.lastName.trim().length < 2) newErrors.lastName = 'Фамилия должна быть минимум 2 символа'
-    if (!form.email.trim()) newErrors.email = 'Введите email'
-    else if (!validateEmail(form.email)) newErrors.email = 'Некорректный формат email'
+    // Сотрудники (Менеджер/Администратор) входят по логину — формат email не проверяем.
+    // У обычных покупателей проверка формата почты остаётся.
+    const isStaff = userRole === 'Менеджер' || userRole === 'Администратор'
+    if (!form.email.trim()) newErrors.email = isStaff ? 'Введите почту или логин' : 'Введите email'
+    else if (!isStaff && !validateEmail(form.email)) newErrors.email = 'Некорректный формат email'
     if (!form.phone.trim()) newErrors.phone = 'Введите телефон'
     else if (!validatePhone(form.phone)) newErrors.phone = 'Некорректный номер телефона'
     const passwordError = getPasswordError(form.password)
@@ -280,7 +285,7 @@ const Profile = () => {
                   <div className="profile__row"><label>Фамилия:</label><div className="profile__value">{displayLastName}</div></div>
                   <div className="profile__row"><label>Имя:</label><div className="profile__value">{displayFirstName}</div></div>
                   <div className="profile__row"><label>Отчество:</label><div className="profile__value">{displayMiddleName || '—'}</div></div>
-                  <div className="profile__row"><label>Email:</label><div className="profile__value">{user.email}</div></div>
+                  <div className="profile__row"><label>{(userRole === 'Менеджер' || userRole === 'Администратор') ? 'Почта/Логин:' : 'Почта:'}</label><div className="profile__value">{user.email}</div></div>
                   <div className="profile__row"><label>Пароль:</label><div className="profile__value">*******</div></div>
                   <div className="profile__row"><label>Телефон:</label><div className="profile__value">{user.phone}</div></div>
                   <div className="profile__row"><label>Адрес доставки:</label><div className="profile__value">{displayAddress || '—'}</div></div>
@@ -305,7 +310,7 @@ const Profile = () => {
                     <input id="profile-middleName" name="middleName" autoComplete="off" value={form.middleName || ''} onChange={handleChange} />
                   </div>
                   <div className="profile__form-group">
-                    <label htmlFor="profile-email">Email</label>
+                    <label htmlFor="profile-email">{(userRole === 'Менеджер' || userRole === 'Администратор') ? 'Почта/Логин' : 'Почта'}</label>
                     <input id="profile-email" name="email" autoComplete="off" value={form.email} onChange={handleChange} className={errors.email ? 'profile__input--error' : ''} />
                     {errors.email && <span className="profile__error-text">{errors.email}</span>}
                   </div>
@@ -446,29 +451,26 @@ const Profile = () => {
             </div>
           )}
 
-          {cancelModalOpen && (
-            <div className="profile__modal-backdrop" onMouseDown={closeCancelModal}>
-              <div className="profile__modal" onMouseDown={e => e.stopPropagation()}>
-                <div>Вы уверены, что хотите отменить заказ #{modalOrderIndex}?</div>
-                <div className="profile__modal-actions">
-                  <button className='profile__modal-btn profile__modal-btn--cancel' onClick={closeCancelModal}>Нет</button>
-                  <button className="profile__modal-btn profile__modal-btn--keep" onClick={confirmCancel}>Да</button>
-                </div>
-              </div>
-            </div>
-          )}
+          <ModalConfirm
+            open={cancelModalOpen}
+            variant="danger"
+            title={`Отменить заказ #${modalOrderIndex}?`}
+            body="Заказ будет отменён, товары вернутся на склад. Это действие нельзя отменить."
+            confirmLabel="Отменить заказ"
+            onCancel={closeCancelModal}
+            onConfirm={confirmCancel}
+          />
 
-          {logoutModalOpen && (
-            <div className="profile__modal-backdrop" onMouseDown={() => setLogoutModalOpen(false)}>
-              <div className="profile__modal" onMouseDown={e => e.stopPropagation()}>
-                <div className="profile__modal-title">Вы точно хотите выйти с аккаунта?</div>
-                <div className="profile__modal-actions">
-                  <button className="profile__modal-btn profile__modal-btn--cancel" onClick={() => setLogoutModalOpen(false)}>Нет</button>
-                  <button className="profile__modal-btn profile__modal-btn--keep" onClick={handleLogout}>Да</button>
-                </div>
-              </div>
-            </div>
-          )}
+          <ModalConfirm
+            open={logoutModalOpen}
+            variant="danger"
+            icon={AlertTriangle}
+            title="Выйти из аккаунта?"
+            body="Вы выйдете из аккаунта и вернётесь на главную страницу."
+            confirmLabel="Выйти"
+            onCancel={() => setLogoutModalOpen(false)}
+            onConfirm={handleLogout}
+          />
         </section>
       </div>
     </div>

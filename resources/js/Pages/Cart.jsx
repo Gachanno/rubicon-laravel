@@ -10,6 +10,7 @@ import {
 import ModalConfirm from '../Components/ModalConfirm';
 import PaymentModal from '../Components/PaymentModal';
 import CheckoutModal from '../Components/CheckoutModal';
+import { AlertTriangle } from 'lucide-react';
 import './cart.scss';
 import { Link, usePage } from '@inertiajs/react';
 import { requestsService } from '../api/api';
@@ -200,11 +201,17 @@ const CartPage = () => {
       />
 
       {stockModal && (
-        <div className="modal-confirm__overlay">
-          <div className="modal-confirm__window">
-            <div className="modal-confirm__text">Увы, у нас не хватило товаров. Мы обновили вашу корзину</div>
+        <div className="modal-confirm__overlay" onMouseDown={() => setStockModal(false)}>
+          <div className="modal-confirm__window" onMouseDown={e => e.stopPropagation()}>
+            <div className="modal-confirm__header modal-confirm__header--warning">
+              <div className="modal-confirm__icon-wrap"><AlertTriangle size={20} strokeWidth={2} /></div>
+              <h3 className="modal-confirm__title">Недостаточно товара</h3>
+            </div>
+            <div className="modal-confirm__body">
+              <p className="modal-confirm__text">Увы, у нас не хватило товаров. Мы обновили вашу корзину.</p>
+            </div>
             <div className="modal-confirm__actions" style={{ justifyContent: 'center' }}>
-              <button className="modal-confirm__btn modal-confirm__btn--success" onClick={() => setStockModal(false)}>Ок</button>
+              <button className="modal-confirm__btn modal-confirm__btn--warning" onClick={() => setStockModal(false)}>Ок</button>
             </div>
           </div>
         </div>

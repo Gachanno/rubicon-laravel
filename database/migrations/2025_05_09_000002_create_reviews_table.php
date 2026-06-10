@@ -15,6 +15,7 @@ return new class extends Migration
             $table->tinyInteger('rating');
             $table->text('body')->nullable();
             $table->json('images')->nullable();
+            $table->string('status')->default('pending'); // pending | approved
             $table->timestamps();
             $table->unique(['user_id', 'product_id']);
         });

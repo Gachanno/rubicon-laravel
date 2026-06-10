@@ -166,10 +166,12 @@ class StatisticsController extends Controller
                 'price'      => (float) ($item['price'] ?? 0),
             ]);
 
+            // Остаток может уйти в минус (например, товар уже заказан онлайн,
+            // а потом продан на физической точке) — это допустимо.
             DB::table('products')
                 ->where('id', (int) $item['productId'])
                 ->update([
-                    'available_quantity' => DB::raw("GREATEST(0, available_quantity - {$qty})"),
+                    'available_quantity' => DB::raw("available_quantity - {$qty}"),
                 ]);
         }
 

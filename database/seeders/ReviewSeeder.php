@@ -113,7 +113,6 @@ class ReviewSeeder extends Seeder
                 'id'               => $oid,
                 'user_id'          => $u,
                 'status'           => 'выдано',
-                'physical_point_id' => 1,
                 'delivery_method'  => 'pickup',
                 'delivery_carrier' => null,
                 'delivery_address' => null,

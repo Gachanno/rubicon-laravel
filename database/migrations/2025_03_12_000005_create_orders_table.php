@@ -12,7 +12,10 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->string('status')->default('в ожидании');
-            $table->integer('physical_point_id')->nullable();
+            // Способ получения: pickup | delivery; служба и адрес — для доставки
+            $table->string('delivery_method')->nullable();
+            $table->string('delivery_carrier')->nullable();
+            $table->string('delivery_address')->nullable();
             $table->timestamps();
         });
     }

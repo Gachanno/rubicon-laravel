@@ -392,7 +392,8 @@ const AdminPanel = () => {
   const [productsRefresh, setProductsRefresh] = useState(0)
   const [editingOrderId, setEditingOrderId] = useState(null)
   const [orderEditForm, setOrderEditForm] = useState({ status: '', deliveryMethod: '', deliveryCarrier: '', deliveryAddress: '' })
-  const [orderCancelModal, setOrderCancelModal] = useState({ open: false, id: null })
+  const [statusChangeModal, setStatusChangeModal] = useState({ open: false, id: null, newStatus: '', payload: null })
+  const [orderDetailsModal, setOrderDetailsModal] = useState({ open: false, id: null })
 
   // Characteristic templates state
   const [charTemplates, setCharTemplates] = useState([])
@@ -751,7 +752,13 @@ const AdminPanel = () => {
   const validatePhone = (phone) => phone.replace(/\D/g, '').length >= 11
   const saveEdit = async (id) => {
     const errors = {}
-    if (!validateEmail(editForm.email)) errors.email = 'Некорректный email'
+    // Для сотрудников (Менеджер/Администратор) логин может быть не email — формат не проверяем
+    const isStaffRole = editForm.role === 'Менеджер' || editForm.role === 'Администратор'
+    if (isStaffRole) {
+      if (!editForm.email?.trim()) errors.email = 'Введите почту или логин'
+    } else {
+      if (!validateEmail(editForm.email)) errors.email = 'Некорректный email'
+    }
     if (!validatePhone(editForm.phone)) errors.phone = 'Телефон должен содержать минимум 11 цифр'
     if (Object.keys(errors).length > 0) { setEditErrors(errors); return }
     const res = await requestsService.updateUser(id, editForm)
@@ -934,7 +941,20 @@ const AdminPanel = () => {
   const confirmCategoryDelete = async () => {
     const id = categoryDeleteModal.id; if (!id) return
     try { await requestsService.deleteCategory(id) } catch {}
-    setCategories(prev => prev.filter(c => c.id !== id)); closeCategoryDelete()
+    // Удаляем из таблицы саму категорию И всё её поддерево (подкатегории каскадно удалены на сервере)
+    setCategories(prev => {
+      const parentOf = c => c.parent_id ?? c.parentId ?? null
+      const toRemove = new Set([id])
+      let changed = true
+      while (changed) {
+        changed = false
+        for (const c of prev) {
+          if (!toRemove.has(c.id) && toRemove.has(parentOf(c))) { toRemove.add(c.id); changed = true }
+        }
+      }
+      return prev.filter(c => !toRemove.has(c.id))
+    })
+    closeCategoryDelete()
     setToast({ show: true, message: `Категория ${id} удалена` }); setTimeout(() => setToast({ show: false, message: '' }), 3000)
   }
 
@@ -951,6 +971,41 @@ const AdminPanel = () => {
   const resetProductFilters = () => { setProductsSearchInput(''); setProductsSearch(''); setProductsFilterDiscount(false); setProductsFilterStock(''); setProductsFilterCategory(''); setProductsFilterPhoto(false); setProductsPage(1) }
   const applyOrderFilters = () => { setOrdersSearch(ordersSearchInput); dispatch(setPage(1)) }
   const resetOrderFilters = () => { setOrdersSearchInput(''); setOrdersSearch(''); setOrdersStatus(''); setOrdersDelivery(''); setOrdersDateFrom(''); setOrdersDateTo(''); dispatch(setPage(1)) }
+
+  // ─── Управление статусом и редактированием заказа ───
+  const applyOrderUpdate = async (id, payload, msg) => {
+    try {
+      const res = await requestsService.updateOrder(id, payload)
+      if (res?.success && res.order) setOrdersPageData(prev => ({ ...prev, data: prev.data.map(it => it.id === id ? res.order : it) }))
+      else setOrdersPageData(prev => ({ ...prev, data: prev.data.map(it => it.id === id ? ({ ...it, ...payload }) : it) }))
+    } catch {
+      setOrdersPageData(prev => ({ ...prev, data: prev.data.map(it => it.id === id ? ({ ...it, ...payload }) : it) }))
+    }
+    setToast({ show: true, message: msg || `Заказ ${id} обновлён` }); setTimeout(() => setToast({ show: false, message: '' }), 3000)
+  }
+  const askStatusChange = (id, newStatus, payload = null) => setStatusChangeModal({ open: true, id, newStatus, payload })
+  const startOrderEdit = (b) => { setEditingOrderId(b.id); setOrderEditForm({ status: b.status || 'в ожидании', deliveryMethod: b.deliveryMethod || '', deliveryCarrier: b.deliveryCarrier || '', deliveryAddress: b.deliveryAddress || '' }) }
+  const saveOrderEdit = (b) => {
+    const deliveryPayload = {
+      deliveryMethod: orderEditForm.deliveryMethod || null,
+      deliveryCarrier: orderEditForm.deliveryMethod === 'delivery' ? (orderEditForm.deliveryCarrier || null) : null,
+      deliveryAddress: orderEditForm.deliveryMethod === 'delivery' ? (orderEditForm.deliveryAddress || null) : null,
+    }
+    // Только администратор может менять статус через «Изменить» — и только с подтверждением
+    if (isAdmin && orderEditForm.status && orderEditForm.status !== b.status) {
+      askStatusChange(b.id, orderEditForm.status, deliveryPayload)
+    } else {
+      applyOrderUpdate(b.id, deliveryPayload)
+      setEditingOrderId(null)
+    }
+  }
+  const confirmStatusChange = async () => {
+    const { id, newStatus, payload } = statusChangeModal
+    setStatusChangeModal({ open: false, id: null, newStatus: '', payload: null })
+    if (!id) return
+    await applyOrderUpdate(id, { status: newStatus, ...(payload || {}) }, `Статус заказа ${id}: ${newStatus}`)
+    setEditingOrderId(null)
+  }
   const confirmDeleteReview = async () => {
     const id = reviewDeleteModal.id; if (!id) return
     const res = await requestsService.deleteReview(id)
@@ -1203,7 +1258,7 @@ const AdminPanel = () => {
                       <thead><tr>
                         <th onClick={() => handleSort('id')} style={{ cursor: 'pointer' }}>id{getSortIndicator('id')}</th>
                         <th onClick={() => handleSort('firstName')} style={{ cursor: 'pointer' }}>ФИО{getSortIndicator('firstName')}</th>
-                        <th onClick={() => handleSort('email')} style={{ cursor: 'pointer' }}>Email{getSortIndicator('email')}</th>
+                        <th onClick={() => handleSort('email')} style={{ cursor: 'pointer' }}>Почта/Логин{getSortIndicator('email')}</th>
                         <th onClick={() => handleSort('phone')} style={{ cursor: 'pointer' }}>Телефон{getSortIndicator('phone')}</th>
                         <th style={{ cursor: 'default' }}>
                           <select
@@ -1799,38 +1854,24 @@ const AdminPanel = () => {
                         <td>{b.id}</td>
                         <td>#{b.userId} — {b.userName || '?'}</td>
                         <td>{b.total ? `${b.total} ₽` : '-'}</td>
-                        <td>{editingOrderId === b.id ? (<select value={orderEditForm.status} onChange={e => setOrderEditForm(prev => ({ ...prev, status: e.target.value }))} className="admin-edit-input"><option value="в ожидании">в ожидании</option><option value="подтверждено">подтверждено</option><option value="отменено">отменено</option><option value="выдано">выдано</option></select>) : b.status}</td>
-                        <td title={b.deliveryAddress || undefined}>{editingOrderId === b.id ? (
-                          <div className="admin-order-delivery-edit">
-                            <select className="admin-edit-input" value={orderEditForm.deliveryMethod} onChange={e => setOrderEditForm(prev => ({ ...prev, deliveryMethod: e.target.value, ...(e.target.value !== 'delivery' ? { deliveryCarrier: '', deliveryAddress: '' } : {}) }))}>
-                              <option value="">— не указано —</option>
-                              <option value="pickup">Самовывоз</option>
-                              <option value="delivery">Доставка</option>
-                            </select>
-                            {orderEditForm.deliveryMethod === 'delivery' && (
-                              <>
-                                <select className="admin-edit-input" value={orderEditForm.deliveryCarrier} onChange={e => setOrderEditForm(prev => ({ ...prev, deliveryCarrier: e.target.value }))}>
-                                  <option value="">— служба —</option>
-                                  <option value="pochta">Почта России</option>
-                                  <option value="sdek">СДЭК</option>
-                                </select>
-                                <input className="admin-edit-input" type="text" placeholder="Адрес доставки" value={orderEditForm.deliveryAddress} onChange={e => setOrderEditForm(prev => ({ ...prev, deliveryAddress: e.target.value }))} />
-                              </>
-                            )}
-                          </div>
-                        ) : (<>{orderDeliveryLabel(b.deliveryMethod, b.deliveryCarrier)}{b.deliveryAddress ? <span className="admin-booking__addr"> · {b.deliveryAddress}</span> : ''}</>)}</td>
+                        <td>{b.status}</td>
+                        <td title={b.deliveryAddress || undefined}>{orderDeliveryLabel(b.deliveryMethod, b.deliveryCarrier)}{b.deliveryAddress ? <span className="admin-booking__addr"> · {b.deliveryAddress}</span> : ''}</td>
                         <td>{(b.created_at || b.createdAt) ? new Date(b.created_at || b.createdAt).toLocaleDateString('ru-RU') : '-'}</td>
-                        <td className='admin__btns'>{editingOrderId === b.id ? (<><button className="btn btn--confirm" onClick={async () => {
-                          const payload = {
-                            status: orderEditForm.status,
-                            deliveryMethod: orderEditForm.deliveryMethod || null,
-                            deliveryCarrier: orderEditForm.deliveryMethod === 'delivery' ? (orderEditForm.deliveryCarrier || null) : null,
-                            deliveryAddress: orderEditForm.deliveryMethod === 'delivery' ? (orderEditForm.deliveryAddress || null) : null,
-                          }
-                          try { const res = await requestsService.updateOrder(b.id, payload); if (res?.success && res.order) setOrdersPageData(prev => ({ ...prev, data: prev.data.map(it => it.id === b.id ? res.order : it) })); else setOrdersPageData(prev => ({ ...prev, data: prev.data.map(it => it.id === b.id ? ({ ...it, ...payload }) : it) })) }
-                          catch { setOrdersPageData(prev => ({ ...prev, data: prev.data.map(it => it.id === b.id ? ({ ...it, ...payload }) : it) })) }
-                          setEditingOrderId(null); setToast({ show: true, message: `Заказ ${b.id} обновлён` }); setTimeout(() => setToast({ show: false, message: '' }), 3000)
-                        }}>Сохранить</button><button className="btn btn--cancel" onClick={() => { setEditingOrderId(null); setOrderEditForm({ status: '', deliveryMethod: '', deliveryCarrier: '', deliveryAddress: '' }) }}>Отмена</button></>) : (<><button className="btn btn--confirm" onClick={() => { setEditingOrderId(b.id); setOrderEditForm({ status: b.status || 'в ожидании', deliveryMethod: b.deliveryMethod || '', deliveryCarrier: b.deliveryCarrier || '', deliveryAddress: b.deliveryAddress || '' }) }}>Изменить</button><button className="btn btn--danger" onClick={() => setOrderCancelModal({ open: true, id: b.id })}>Отменить</button></>)}</td>
+                        <td className='admin__btns'>
+                          {b.status === 'в ожидании' && (
+                            <>
+                              <button className="btn btn--confirm" onClick={() => askStatusChange(b.id, 'подтверждено')}>Подтвердить</button>
+                              <button className="btn btn--danger" onClick={() => askStatusChange(b.id, 'отменено')}>Отменить</button>
+                            </>
+                          )}
+                          {b.status === 'подтверждено' && (
+                            <>
+                              <button className="btn btn--confirm" onClick={() => askStatusChange(b.id, 'выдано')}>Выдать</button>
+                              <button className="btn btn--danger" onClick={() => askStatusChange(b.id, 'отменено')}>Отменить</button>
+                            </>
+                          )}
+                          <button className="btn btn--two" onClick={() => { setEditingOrderId(null); setOrderDetailsModal({ open: true, id: b.id }) }}>Подробнее</button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -2609,19 +2650,96 @@ const AdminPanel = () => {
 
         </section>
       </div>
+      {orderDetailsModal.open && (() => {
+        const o = ordersPageData.data.find(x => x.id === orderDetailsModal.id)
+        if (!o) return null
+        const editing = editingOrderId === o.id
+        const closeDetails = () => { setEditingOrderId(null); setOrderDetailsModal({ open: false, id: null }) }
+        return (
+          <div className="admin-modal-overlay" onMouseDown={closeDetails}>
+            <div className="admin-order-modal" onMouseDown={e => e.stopPropagation()}>
+              <div className="admin-order-modal__header">
+                <h3 className="admin-order-modal__title">Заказ #{o.id}</h3>
+                <button className="admin-order-modal__close" onClick={closeDetails} aria-label="Закрыть"><X size={20} /></button>
+              </div>
+              <div className="admin-order-modal__body">
+                <div className="admin-order-modal__row"><span>Покупатель</span><b>#{o.userId} — {o.userName || '—'}</b></div>
+                <div className="admin-order-modal__row"><span>Создан</span><b>{(o.createdAt || o.created_at) ? new Date(o.createdAt || o.created_at).toLocaleString('ru-RU') : '—'}</b></div>
+                <div className="admin-order-modal__row">
+                  <span>Статус</span>
+                  {editing && isAdmin
+                    ? <select className="admin-edit-input" value={orderEditForm.status} onChange={e => setOrderEditForm(prev => ({ ...prev, status: e.target.value }))}>
+                        <option value="в ожидании">в ожидании</option>
+                        <option value="подтверждено">подтверждено</option>
+                        <option value="отменено">отменено</option>
+                        <option value="выдано">выдано</option>
+                      </select>
+                    : <b>{o.status}</b>}
+                </div>
+                <div className="admin-order-modal__row">
+                  <span>Способ получения</span>
+                  {editing
+                    ? <div className="admin-order-delivery-edit">
+                        <select className="admin-edit-input" value={orderEditForm.deliveryMethod} onChange={e => setOrderEditForm(prev => ({ ...prev, deliveryMethod: e.target.value, ...(e.target.value !== 'delivery' ? { deliveryCarrier: '', deliveryAddress: '' } : {}) }))}>
+                          <option value="">— не указано —</option>
+                          <option value="pickup">Самовывоз</option>
+                          <option value="delivery">Доставка</option>
+                        </select>
+                        {orderEditForm.deliveryMethod === 'delivery' && (
+                          <>
+                            <select className="admin-edit-input" value={orderEditForm.deliveryCarrier} onChange={e => setOrderEditForm(prev => ({ ...prev, deliveryCarrier: e.target.value }))}>
+                              <option value="">— служба —</option>
+                              <option value="pochta">Почта России</option>
+                              <option value="sdek">СДЭК</option>
+                            </select>
+                            <input className="admin-edit-input" type="text" placeholder="Адрес доставки" value={orderEditForm.deliveryAddress} onChange={e => setOrderEditForm(prev => ({ ...prev, deliveryAddress: e.target.value }))} />
+                          </>
+                        )}
+                      </div>
+                    : <b>{orderDeliveryLabel(o.deliveryMethod, o.deliveryCarrier)}{o.deliveryAddress ? ` · ${o.deliveryAddress}` : ''}</b>}
+                </div>
+                <div className="admin-order-modal__row"><span>Итоговая сумма</span><b>{o.total ? `${o.total} ₽` : '—'}</b></div>
+                <div className="admin-order-modal__items">
+                  <div className="admin-order-modal__items-title">Товары</div>
+                  {o.items && o.items.length > 0 ? (
+                    <ul className="admin-order-modal__items-list">
+                      {o.items.map(it => (
+                        <li key={it.id}>
+                          <Link href={`/products/${it.productId}`} className="admin-order-modal__item-link">{it.productName}</Link>
+                          <span className="admin-order-modal__item-qty">× {it.quantity}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : <div className="admin-order-modal__empty">Нет товаров</div>}
+                </div>
+              </div>
+              <div className="admin-order-modal__footer">
+                {editing ? (
+                  <>
+                    <button className="btn btn--cancel" onClick={() => setEditingOrderId(null)}>Отмена</button>
+                    <button className="btn btn--confirm" onClick={() => saveOrderEdit(o)}>Сохранить</button>
+                  </>
+                ) : (
+                  <>
+                    <button className="btn btn--cancel" onClick={closeDetails}>Закрыть</button>
+                    <button className="btn btn--two" onClick={() => startOrderEdit(o)} title={isAdmin ? 'Изменить статус и доставку' : 'Изменить способ получения'}>Изменить</button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )
+      })()}
       <ConfirmModal
-        open={orderCancelModal.open}
-        title={`Отменить заказ #${orderCancelModal.id}?`}
-        message="Статус заказа изменится на «Отменено». Покупатель получит уведомление при следующем входе."
-        variant="warning"
-        confirmLabel="Отменить заказ"
-        onCancel={() => setOrderCancelModal({ open: false, id: null })}
-        onConfirm={async () => {
-          const id = orderCancelModal.id; if (!id) return
-          try { const res = await requestsService.updateOrder(id, { status: 'отменено' }); if (res?.success && res.order) setOrdersPageData(prev => ({ ...prev, data: prev.data.map(b => b.id === id ? res.order : b) })); else setOrdersPageData(prev => ({ ...prev, data: prev.data.map(b => b.id === id ? ({ ...b, status: 'отменено' }) : b) })) }
-          catch { setOrdersPageData(prev => ({ ...prev, data: prev.data.map(b => b.id === id ? ({ ...b, status: 'отменено' }) : b) })) }
-          setOrderCancelModal({ open: false, id: null }); setToast({ show: true, message: `Заказ ${id} отменён` }); setTimeout(() => setToast({ show: false, message: '' }), 3000)
-        }}
+        open={statusChangeModal.open}
+        title={`Изменить статус заказа ${statusChangeModal.id} на «${statusChangeModal.newStatus}»?`}
+        message={statusChangeModal.newStatus === 'отменено'
+          ? 'Товары вернутся на склад, покупатель получит уведомление о смене статуса.'
+          : 'Покупатель получит уведомление о смене статуса заказа.'}
+        variant={statusChangeModal.newStatus === 'отменено' ? 'danger' : 'success'}
+        confirmLabel="Изменить статус"
+        onCancel={() => setStatusChangeModal({ open: false, id: null, newStatus: '', payload: null })}
+        onConfirm={confirmStatusChange}
       />
       {toast.show && <div className="admin-toast">{toast.message}</div>}
     </div>

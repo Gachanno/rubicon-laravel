@@ -43,6 +43,13 @@
 
     .modal-confirm__icon-wrap { color: #2e7d32; }
   }
+
+  &--warning {
+    background: #fff8e1;
+    border-bottom: 1px solid #fff3cd;
+
+    .modal-confirm__icon-wrap { color: #e67e22; }
+  }
 }
 
 .modal-confirm__icon-wrap {
@@ -125,6 +132,12 @@
     background: #2e7d32;
     color: #fff;
     &:hover { background: #1b5e20; }
+  }
+
+  &--warning {
+    background: #e67e22;
+    color: #fff;
+    &:hover { background: #ca6f1e; }
   }
 }
 

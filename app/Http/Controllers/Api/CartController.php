@@ -118,7 +118,8 @@ class CartController extends Controller
         }
 
         $product = Product::find($item->product_id);
-        $maxQty = $product ? $product->available_quantity : $validated['quantity'];
+        // Отрицательный остаток (перепродажа) трактуем как 0 доступных для покупателя
+        $maxQty = $product ? max(0, $product->available_quantity) : $validated['quantity'];
         $item->quantity = min($validated['quantity'], $maxQty);
         $item->save();
 
@@ -186,9 +187,10 @@ class CartController extends Controller
         $adjusted = false;
         foreach ($items as $item) {
             $product = $item->product;
-            if (!$product || $item->quantity > $product->available_quantity) {
+            $avail = $product ? max(0, $product->available_quantity) : 0;
+            if (!$product || $item->quantity > $avail) {
                 $adjusted = true;
-                $newQty = $product ? $product->available_quantity : 0;
+                $newQty = $avail;
                 if ($newQty === 0) {
                     $item->delete();
                 } else {
